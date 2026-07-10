@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResuCraft AI - ATS Refinement & Analysis</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Dedicated styles for interactive tuning page */
+    .tuning-section {
+      margin-bottom: 28px;
+    }
+    .tuning-section-title {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tuning-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tuning-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: all 0.2s ease;
+    }
+    .tuning-item:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: rgba(var(--primary-rgb), 0.2);
+    }
+    .tuning-item.selected {
+      border-left: 4px solid var(--success);
+      background: rgba(16, 185, 129, 0.02);
+    }
+    .tuning-item.unselected {
+      border-left: 4px solid var(--text-muted);
+      opacity: 0.85;
+    }
+    .tuning-item-details {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex-grow: 1;
+      margin-right: 16px;
+    }
+    .tuning-item-title {
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    .tuning-item-meta {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+    .tuning-item-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .tuning-item-badge.selected-badge {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+    .tuning-item-badge.unselected-badge {
+      background: var(--secondary);
+      color: var(--text-muted);
+    }
+    
+    /* Interactive Skills Categories Tuning */
+    .skills-tuning-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .skills-tuning-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .skills-tuning-card h4 {
+      font-size: 0.85rem;
+      font-weight: 750;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    
+    /* Missing Skills section in Tuning */
+    .missing-skills-section {
+      background: rgba(239, 68, 68, 0.02);
+      border: 1px dashed rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. TOP HEADER NAVIGATION -->
+  <header class="app-header">
+    <div class="brand-area" onclick="location.href='index.html'">
+      <div class="brand-logo">
+        <i class="fas fa-file-invoice"></i> ResuCraft AI
+      </div>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <nav class="stepper-horizontal">
+      <a href="index.html" class="menu-item" data-step="1">
+        <i class="fas fa-user-circle"></i>
+        <span>Profile & Edu</span>
+      </a>
+      <a href="experience.html" class="menu-item" data-step="2">
+        <i class="fas fa-briefcase"></i>
+        <span>Exp & Projects</span>
+      </a>
+      <a href="ai.html" class="menu-item" data-step="3">
+        <i class="fas fa-brain"></i>
+        <span>AI & Job Target</span>
+      </a>
+      <a href="output.html" class="menu-item" data-step="4">
+        <i class="fas fa-file-alt"></i>
+        <span>Resume Output</span>
+      </a>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <div id="userBadge" class="social-avatar-widget guest">
+        <div class="avatar-ring">
+          <div class="avatar-img" id="avatarImg">G</div>
+        </div>
+        <div class="avatar-details">
+          <span class="avatar-username" id="userStatusText">Guest Mode</span>
+        </div>
+      </div>
+      <button id="authModalBtn" type="button" class="auth-link">Login / Register</button>
+      <button id="logoutBtn" type="button" class="auth-link danger" style="display: none;">Logout</button>
+      <button id="themeToggle" type="button" class="ghost-btn small-btn" title="Toggle theme">
+        <i class="fas fa-adjust"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. SPLIT LAYOUT APP BODY -->
+  <div class="app-body">
+    
+    <!-- Left Column: Fine Tuning Interactive Interface -->
+    <main class="center-feed">
+      
+      <div class="feed-header">
+        <h1>ATS Refinement Dashboard</h1>
+        <p>Directly toggle project inclusions, manage certificates, and resolve missing skills in real-time.</p>
+      </div>
+
+      <!-- Missing Skills Helper Panel -->
+      <div class="missing-skills-section">
+        <h3 style="font-size: 0.9rem; font-weight: 750; color: var(--danger); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-exclamation-circle"></i> Detected Missing Keywords
+        </h3>
+        <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 12px;">
+          Click any missing skill below to add it directly to one of your skill categories.
+        </p>
+        <div id="missingKeywordsContainer" class="chip-row">
+          <!-- Missing chips rendered here -->
+        </div>
+      </div>
+
+      <!-- Section 1: Projects Selector -->
+      <section class="tuning-section">
+        <div class="tuning-section-title">
+          <span>Target Technical Projects</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" id="projectQuotaText">Selected: 0/0</span>
+        </div>
+        <div class="tuning-list" id="projectsTuningList">
+          <!-- Projects list with Add/Remove buttons -->
+        </div>
+      </section>
+
+      <!-- Section 2: Certificates Selector -->
+      <section class="tuning-section">
+        <div class="tuning-section-title">
+          <span>Certifications</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" id="certificateQuotaText">Selected: 0/0</span>
+        </div>
+        <div class="tuning-list" id="certificatesTuningList">
+          <!-- Certificates list with Add/Remove buttons -->
+        </div>
+      </section>
+
+      <!-- Section 3: Skills categories Tag Editors -->
+      <section class="tuning-section">
+        <div class="tuning-section-title">
+          <span>Technical Skills Categories</span>
+        </div>
+        <div class="skills-tuning-grid">
+          <div class="skills-tuning-card">
+            <h4>Languages</h4>
+            <textarea id="skillsLanguages" style="display:none;"></textarea>
+          </div>
+          <div class="skills-tuning-card">
+            <h4>Frameworks & Libraries</h4>
+            <textarea id="skillsFrameworks" style="display:none;"></textarea>
+          </div>
+          <div class="skills-tuning-card">
+            <h4>Databases</h4>
+            <textarea id="skillsDatabases" style="display:none;"></textarea>
+          </div>
+          <div class="skills-tuning-card">
+            <h4>Developer Tools</h4>
+            <textarea id="skillsTools" style="display:none;"></textarea>
+          </div>
+          <div class="skills-tuning-card">
+            <h4>Core Competencies</h4>
+            <textarea id="skillsCore" style="display:none;"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sticky Save/Update actions -->
+      <div class="button-row" style="margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--border);">
+        <button id="updatePreviewBtn" type="button" class="primary-btn" style="flex-grow: 1; padding: 14px; font-size: 0.95rem; background-color: var(--success);">
+          <i class="fas fa-sync-alt"></i> Update & View Resume Preview
+        </button>
+        <button type="button" onclick="location.href='output.html'" class="ghost-btn" style="padding: 14px;">
+          Cancel
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Right Column: Live Resume Preview Dashboard (Wide Workspace) -->
+    <aside class="right-drawer" id="rightDrawer" style="display: flex !important;">
+      <div class="right-drawer-header">
+        <h2>Live Resume Dashboard</h2>
+        <p>Real-time ATS scores, formatting structures, and LaTeX exports.</p>
+      </div>
+
+      <div id="status" class="status">Ready.</div>
+
+      <!-- Real-time ATS Circular Widget -->
+      <div class="social-score-container">
+        <div class="circle-progress-wrapper med-score" id="scoreCircle">
+          <span id="atsScore">--</span>
+        </div>
+        <div class="score-details">
+          <h4 class="score-title">Estimated ATS Keyword Score</h4>
+          <span class="score-subtitle" id="selectedCounts">--</span>
+        </div>
+      </div>
+
+      <!-- Live Preview Area Tabs -->
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="preview">Preview</button>
+        <button type="button" class="tab" data-tab="latex">LaTeX Code</button>
+        <button type="button" class="tab" data-tab="analysis" style="background: var(--secondary-hover); border-bottom: 2px solid var(--primary);">Tuning Panel Active</button>
+      </div>
+
+      <div class="right-drawer-body">
+        <section id="previewTab" class="tab-content active">
+          <div id="resumePreview" class="resume-preview empty-state">Generated resume preview will appear here. Enter details and generate to start.</div>
+        </section>
+        <section id="latexTab" class="tab-content">
+          <pre id="latexOutput" class="code-block">LaTeX output will appear here.</pre>
+        </section>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="right-drawer-footer">
+        <div class="button-row full-width">
+          <button id="downloadTexBtn" type="button" class="primary-btn" style="flex-grow: 1;">
+            <i class="fas fa-file-download"></i> Download .tex
+          </button>
+          <button id="copyLatexBtn" type="button" class="secondary-btn">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Sleek Auth Modal Overlay -->
+  <div id="authModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="authModalTitle">Sign In</h2>
+        <button id="closeAuthModal" type="button" class="close-btn">&times;</button>
+      </div>
+      <form id="authForm">
+        <div class="status error" id="authError" style="display: none;"></div>
+        <div class="status success" id="authSuccess" style="display: none;"></div>
+        
+        <label>Username
+          <input id="authUsername" type="text" placeholder="Enter username" required minlength="3" autocomplete="username" />
+        </label>
+        <label>Password
+          <input id="authPassword" type="password" placeholder="Enter password" required minlength="5" autocomplete="current-password" />
+        </label>
+        
+        <div class="button-row compact" style="margin-top: 18px;">
+          <button id="authSubmitBtn" type="submit" class="primary-btn" style="width: 100%;">Sign In</button>
+        </div>
+        <p class="modal-switch-text">
+          Don't have an account? <a href="#" id="toggleAuthMode">Create one now</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/sampleData.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/templateEngine.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Analysis specific script to run when analysis.html loads
+    document.addEventListener("DOMContentLoaded", () => {
+      // Re-route the tabs click handlers on this page
+      document.querySelectorAll(".tab").forEach(button => {
+        button.addEventListener("click", () => {
+          if (button.dataset.tab !== "analysis") {
+            activateTab(button.dataset.tab);
+          }
+        });
+      });
+
+      // Render the fine tuning options
+      renderTuningDashboard();
+
+      // Bind update button
+      const updateBtn = document.getElementById("updatePreviewBtn");
+      if (updateBtn) {
+        updateBtn.addEventListener("click", () => {
+          triggerAutoRecompute();
+          showStatus("Applying updates to resume...", false, true);
+          setTimeout(() => {
+            window.location.href = "output.html";
+          }, 500);
+        });
+      }
+    });
+
+    function renderTuningDashboard() {
+      // Retrieve latest details
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+
+      try {
+        const data = JSON.parse(savedJson);
+        const input = data.input;
+        const resume = data.resume;
+
+        // Render quota labels
+        document.getElementById("projectQuotaText").textContent = `Selected: ${resume.selectedProjects.length} / ${input.projectCount} max`;
+        document.getElementById("certificateQuotaText").textContent = `Selected: ${resume.selectedCertificates.length} / ${input.certificateCount} max`;
+
+        // Render projects tuning list
+        const projectsList = document.getElementById("projectsTuningList");
+        projectsList.innerHTML = "";
+        
+        // Find which project titles are currently selected
+        const selectedProjectTitles = new Set(resume.selectedProjects.map(p => String(p.title || "").toLowerCase()));
+
+        input.projects.forEach((proj, idx) => {
+          const isSelected = selectedProjectTitles.has(String(proj.title || "").toLowerCase());
+          const item = document.createElement("div");
+          item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
+          
+          item.innerHTML = `
+            <div class="tuning-item-details">
+              <div class="tuning-item-title">${escapeHtml(proj.title)}</div>
+              <div class="tuning-item-meta">${escapeHtml(proj.technologies)}</div>
+              <span class="tuning-item-badge ${isSelected ? "selected-badge" : "unselected-badge"}">
+                ${isSelected ? "Included" : "Excluded"}
+              </span>
+            </div>
+            <div>
+              ${isSelected ? 
+                `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger"><i class="fas fa-minus"></i> Remove</button>` :
+                `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn"><i class="fas fa-plus"></i> Include</button>`
+              }
+            </div>
+          `;
+          projectsList.appendChild(item);
+        });
+
+        // Render certificates tuning list
+        const certsList = document.getElementById("certificatesTuningList");
+        certsList.innerHTML = "";
+
+        const selectedCertTitles = new Set(resume.selectedCertificates.map(c => String(c.title || "").toLowerCase()));
+
+        input.certificates.forEach((cert, idx) => {
+          const isSelected = selectedCertTitles.has(String(cert.title || "").toLowerCase());
+          const item = document.createElement("div");
+          item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
+          
+          item.innerHTML = `
+            <div class="tuning-item-details">
+              <div class="tuning-item-title">${escapeHtml(cert.title)}</div>
+              <div class="tuning-item-meta">${escapeHtml(cert.issuer || "")}</div>
+              <span class="tuning-item-badge ${isSelected ? "selected-badge" : "unselected-badge"}">
+                ${isSelected ? "Included" : "Excluded"}
+              </span>
+            </div>
+            <div>
+              ${isSelected ? 
+                `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger"><i class="fas fa-minus"></i> Remove</button>` :
+                `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn"><i class="fas fa-plus"></i> Include</button>`
+              }
+            </div>
+          `;
+          certsList.appendChild(item);
+        });
+
+        // Render missing keywords
+        const keywordsContainer = document.getElementById("missingKeywordsContainer");
+        keywordsContainer.innerHTML = "";
+        
+        const missing = resume.missingKeywords || [];
+        if (missing.length === 0) {
+          keywordsContainer.innerHTML = "<p class='note'>No missing keywords detected!</p>";
+        } else {
+          missing.forEach(keyword => {
+            const chip = document.createElement("span");
+            chip.className = "chip missing";
+            chip.title = "Click to add this missing skill";
+            chip.innerHTML = `${escapeHtml(keyword)} <i class="fas fa-plus-circle" style="font-size:0.65rem; margin-left:3px;"></i>`;
+            chip.addEventListener("click", (e) => {
+              showAddMissingSkillMenu(e, keyword);
+            });
+            keywordsContainer.appendChild(chip);
+          });
+        }
+
+      } catch (err) {
+        console.error("Failed to render tuning panel:", err);
+      }
+    }
+
+    // Toggle inclusion functions
+    function toggleProjectSelection(projectTitle, shouldInclude) {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+
+      try {
+        const data = JSON.parse(savedJson);
+        const input = data.input;
+        let selectedProjects = data.resume.selectedProjects || [];
+
+        if (shouldInclude) {
+          // Find project in draft memory
+          const projectToAdd = input.projects.find(p => String(p.title || "").toLowerCase() === projectTitle.toLowerCase());
+          if (projectToAdd && !selectedProjects.some(p => String(p.title || "").toLowerCase() === projectTitle.toLowerCase())) {
+            // Check if we exceed project quota count, if so, remove first selected project or alert
+            if (selectedProjects.length >= input.projectCount) {
+              selectedProjects.shift(); // Remove first item to stay within bounds
+            }
+            // Generate bullets
+            const matchVerbs = new Map();
+            const jdKeywords = data.resume.jdKeywords || [];
+            
+            const localProj = {
+              title: projectToAdd.title,
+              technologies: splitList(projectToAdd.technologies),
+              link: projectToAdd.link || "",
+              bullets: generateProjectBullets(projectToAdd, jdKeywords, matchVerbs)
+            };
+            selectedProjects.push(localProj);
+          }
+        } else {
+          // Filter out
+          selectedProjects = selectedProjects.filter(p => String(p.title || "").toLowerCase() !== projectTitle.toLowerCase());
+        }
+
+        // Save back
+        data.resume.selectedProjects = selectedProjects;
+        
+        // Re-score
+        const updatedResume = generateLocalResume(input);
+        updatedResume.selectedProjects = selectedProjects; // Preserve selection choice
+        updatedResume.atsScore = estimateDetailedAtsScore(input, selectedProjects, data.resume.selectedCertificates, updatedResume.jdKeywords);
+        
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(input, updatedResume));
+
+        // Re-render
+        renderResult(input, updatedResume);
+        renderTuningDashboard();
+        showStatus("Project selection updated locally.", false, true);
+
+      } catch (err) {
+        console.error("Failed to toggle project selection:", err);
+      }
+    }
+
+    function toggleCertSelection(certTitle, shouldInclude) {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+
+      try {
+        const data = JSON.parse(savedJson);
+        const input = data.input;
+        let selectedCerts = data.resume.selectedCertificates || [];
+
+        if (shouldInclude) {
+          const certToAdd = input.certificates.find(c => String(c.title || "").toLowerCase() === certTitle.toLowerCase());
+          if (certToAdd && !selectedCerts.some(c => String(c.title || "").toLowerCase() === certTitle.toLowerCase())) {
+            if (selectedCerts.length >= input.certificateCount) {
+              selectedCerts.shift();
+            }
+            selectedCerts.push({
+              title: certToAdd.title,
+              issuer: certToAdd.issuer,
+              date: certToAdd.date,
+              reason: relevanceReason(certToAdd.skills || certToAdd.title, data.resume.jdKeywords || [])
+            });
+          }
+        } else {
+          selectedCerts = selectedCerts.filter(c => String(c.title || "").toLowerCase() !== certTitle.toLowerCase());
+        }
+
+        // Save back
+        data.resume.selectedCertificates = selectedCerts;
+
+        const updatedResume = generateLocalResume(input);
+        updatedResume.selectedCertificates = selectedCerts;
+        updatedResume.selectedProjects = data.resume.selectedProjects; // Preserve project selection
+        updatedResume.atsScore = estimateDetailedAtsScore(input, data.resume.selectedProjects, selectedCerts, updatedResume.jdKeywords);
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(input, updatedResume));
+
+        // Re-render
+        renderResult(input, updatedResume);
+        renderTuningDashboard();
+        showStatus("Certificate selection updated locally.", false, true);
+
+      } catch (err) {
+        console.error("Failed to toggle certificate selection:", err);
+      }
+    }
+
+    // Override the tag editor update so it triggers both updates
+    const origUpdateTextarea = updateTextareaFromEditor;
+    updateTextareaFromEditor = function(editor) {
+      origUpdateTextarea(editor);
+      renderTuningDashboard(); // Refresh our dashboard too
+    };
+  </style>
+</body>
+</html>

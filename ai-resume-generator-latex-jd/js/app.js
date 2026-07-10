@@ -157,7 +157,13 @@ function init() {
 
   if (document.querySelectorAll(".tab")) {
     document.querySelectorAll(".tab").forEach(button => {
-      button.addEventListener("click", () => activateTab(button.dataset.tab));
+      button.addEventListener("click", () => {
+        if (button.dataset.tab === "analysis" && !window.location.pathname.includes("analysis.html")) {
+          window.location.href = "analysis.html";
+        } else {
+          activateTab(button.dataset.tab);
+        }
+      });
     });
   }
 
