@@ -360,6 +360,8 @@
           if (savedJson) {
             try {
               const data = JSON.parse(savedJson);
+              if (!data.input) data.input = {};
+              if (!data.resume) data.resume = {};
               
               // 2. Read latest skills from DOM textareas
               data.input.skills = {
@@ -374,14 +376,18 @@
               localStorage.setItem("draftResumeData", JSON.stringify(data.input));
               
               // 3. Recompute keyword matching metrics & ATS score based on manual selections
-              const allSkills = Object.values(data.input.skills).join(", ");
+              const allSkills = Object.values(data.input.skills || {}).join(", ");
               const jdKeywords = data.resume.jdKeywords || [];
+              
+              // Safe access for selected projects and certificates
+              const selectedProjects = data.resume.selectedProjects || [];
+              const selectedCertificates = data.resume.selectedCertificates || [];
               
               // Re-run ATS scoring
               data.resume.atsScore = estimateDetailedAtsScore(
                 data.input, 
-                data.resume.selectedProjects, 
-                data.resume.selectedCertificates, 
+                selectedProjects, 
+                selectedCertificates, 
                 jdKeywords
               );
               
@@ -390,12 +396,16 @@
               const missingSet = new Set(jdKeywords);
               
               // Check matches in skills, projects, certificates, experience
-              const textContent = (
-                allSkills + " " +
-                data.resume.selectedProjects.map(p => p.title + " " + p.technologies.join(" ") + " " + p.bullets.join(" ")).join(" ") + " " +
-                data.resume.selectedCertificates.map(c => c.title + " " + (c.reason || "")).join(" ") + " " +
-                data.input.experience.map(e => e.role + " " + e.bullets).join(" ")
-              ).toLowerCase();
+              const projectsText = selectedProjects.map(p => {
+                const techText = Array.isArray(p.technologies) ? p.technologies.join(" ") : String(p.technologies || "");
+                const bulletsText = Array.isArray(p.bullets) ? p.bullets.join(" ") : String(p.bullets || "");
+                return (p.title || "") + " " + techText + " " + bulletsText;
+              }).join(" ");
+              
+              const certsText = selectedCertificates.map(c => (c.title || "") + " " + (c.reason || c.issuer || "")).join(" ");
+              const expText = (data.input.experience || []).map(e => (e.role || "") + " " + (e.bullets || "")).join(" ");
+              
+              const textContent = (allSkills + " " + projectsText + " " + certsText + " " + expText).toLowerCase();
               
               jdKeywords.forEach(kw => {
                 if (textContent.includes(kw.toLowerCase())) {
