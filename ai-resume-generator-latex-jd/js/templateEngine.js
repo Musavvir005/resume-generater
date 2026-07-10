@@ -160,16 +160,47 @@ function buildLatexResume(data, resume) {
 \newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in, itemsep=2.0pt, parsep=0pt, topsep=2.0pt, partopsep=0pt]}
 \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{2pt}}`;
 
+  const maxProj = Math.min(data.projectCount || 3, isOnePage ? 2 : 4);
+  const maxCerts = Math.min(data.certificateCount || 3, isOnePage ? 2 : 4);
+  const finalAchievementsLimit = Math.min((data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3, isOnePage ? 2 : 3);
+  const maxBullets = isOnePage ? 2 : 3;
+  const finalSkillsLimit = Math.min((data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6, isOnePage ? 5 : 8);
+
+  const cleanProjects = (resume.selectedProjects || []).slice(0, maxProj).map(p => ({
+    ...p,
+    bullets: (p.bullets || []).slice(0, maxBullets)
+  }));
+  const cleanCertificates = (resume.selectedCertificates || []).slice(0, maxCerts);
+  const cleanAchievements = (resume.achievements || data.achievements || []).slice(0, finalAchievementsLimit);
+  
+  const cleanExperience = (resume.experience || data.experience || []).map(exp => ({
+    ...exp,
+    bullets: (exp.bullets || []).slice(0, maxBullets)
+  }));
+
+  const cleanSkills = {};
+  if (resume.skills) {
+    Object.keys(resume.skills).forEach(cat => {
+      cleanSkills[cat] = (resume.skills[cat] || []).slice(0, finalSkillsLimit);
+    });
+  } else if (data.skills) {
+    // Fallback if resume.skills is empty
+    const cats = optimizeSkills(data.skills, resume.jdKeywords || []);
+    Object.keys(cats).forEach(cat => {
+      cleanSkills[cat] = (cats[cat] || []).slice(0, finalSkillsLimit);
+    });
+  }
+
   const replacements = {
     LAYOUT_SPACING_CONFIG: spacingConfig,
     HEADER: formatHeaderLatex(data),
     EDUCATION: formatEducationLatex(resume.education || data.education),
-    EXPERIENCE: formatExperienceLatex(resume.experience || data.experience),
+    EXPERIENCE: formatExperienceLatex(cleanExperience),
     PATENTS: formatPatentsLatex(resume.patents || data.patents),
-    PROJECTS: formatProjectsLatex(resume.selectedProjects || []),
-    SKILLS: formatSkillsLatex(resume.skills || {}),
-    CERTIFICATIONS: formatCertificatesLatex(resume.selectedCertificates || []),
-    ACHIEVEMENTS: formatAchievementsLatex(resume.achievements || data.achievements || [])
+    PROJECTS: formatProjectsLatex(cleanProjects),
+    SKILLS: formatSkillsLatex(cleanSkills),
+    CERTIFICATIONS: formatCertificatesLatex(cleanCertificates),
+    ACHIEVEMENTS: formatAchievementsLatex(cleanAchievements)
   };
 
   return Object.entries(replacements).reduce((latex, [key, value]) => latex.replace(`{{${key}}}`, value || ""), USER_FORMAT_LATEX_TEMPLATE).replace(/\n{3,}/g, "\n\n");
@@ -268,8 +299,38 @@ function formatAchievementLatex(value) {
 }
 
 function buildHtmlPreview(data, resume) {
-  const projects = resume.selectedProjects || [];
-  const certificates = resume.selectedCertificates || [];
+  const isOnePage = Number(data.pageCount) === 1 || String(data.pageCount) === "1" || !data.pageCount;
+
+  const maxProj = Math.min(data.projectCount || 3, isOnePage ? 2 : 4);
+  const maxCerts = Math.min(data.certificateCount || 3, isOnePage ? 2 : 4);
+  const finalAchievementsLimit = Math.min((data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3, isOnePage ? 2 : 3);
+  const maxBullets = isOnePage ? 2 : 3;
+  const finalSkillsLimit = Math.min((data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6, isOnePage ? 5 : 8);
+
+  const cleanProjects = (resume.selectedProjects || []).slice(0, maxProj).map(p => ({
+    ...p,
+    bullets: (p.bullets || []).slice(0, maxBullets)
+  }));
+  const cleanCertificates = (resume.selectedCertificates || []).slice(0, maxCerts);
+  const cleanAchievements = (resume.achievements || data.achievements || []).slice(0, finalAchievementsLimit);
+  
+  const cleanExperience = (resume.experience || data.experience || []).map(exp => ({
+    ...exp,
+    bullets: (exp.bullets || []).slice(0, maxBullets)
+  }));
+
+  const cleanSkills = {};
+  if (resume.skills) {
+    Object.keys(resume.skills).forEach(cat => {
+      cleanSkills[cat] = (resume.skills[cat] || []).slice(0, finalSkillsLimit);
+    });
+  } else if (data.skills) {
+    const cats = optimizeSkills(data.skills, resume.jdKeywords || []);
+    Object.keys(cats).forEach(cat => {
+      cleanSkills[cat] = (cats[cat] || []).slice(0, finalSkillsLimit);
+    });
+  }
+
   return `
     <div class="center">
       <div class="name">${escapeHtml(data.name || "Student Name")}</div>
@@ -279,7 +340,7 @@ function buildHtmlPreview(data, resume) {
       <div class="resume-row"><strong>${escapeHtml(edu.institution || "")}</strong><strong>${escapeHtml(edu.location || "")}</strong></div>
       <div class="resume-row"><em>${escapeHtml(edu.degree || "")}</em><em>${escapeHtml(edu.duration || "")}</em></div>
     `).join(""))}
-    ${htmlSection("Experience", (resume.experience || []).map(exp => `
+    ${htmlSection("Experience", cleanExperience.map(exp => `
       <div class="resume-row"><strong>${escapeHtml(exp.role || "")}</strong><strong>${escapeHtml(exp.duration || "")}</strong></div>
       <div class="resume-row"><em>${escapeHtml(exp.company || "")}</em><em>${escapeHtml(exp.location || "")}</em></div>
       ${htmlBullets(exp.bullets)}
@@ -287,19 +348,19 @@ function buildHtmlPreview(data, resume) {
     ${htmlSection("Patents & Publications", (resume.patents || []).map(item => `
       <p><strong>${escapeHtml(item.title || "")}</strong></p>${htmlBullets([item.detail])}
     `).join(""))}
-    ${htmlSection("Projects", projects.map(project => {
+    ${htmlSection("Projects", cleanProjects.map(project => {
       const titleHtml = project.link ? `<a href="${escapeHtml(project.link)}" target="_blank" style="color: var(--primary); text-decoration: underline;">${escapeHtml(project.title || "")}</a>` : escapeHtml(project.title || "");
       return `
         <p class="project-title"><strong>${titleHtml}</strong> | <em>${escapeHtml(arrayToText(project.technologies))}</em></p>
         ${htmlBullets(project.bullets)}
       `;
     }).join(""))}
-    ${htmlSection("Technical Skills", Object.entries(resume.skills || {}).filter(([, v]) => arrayToText(v)).map(([k, v]) => `<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(arrayToText(v))}</p>`).join(""))}
-    ${htmlSection("Certifications", certificates.map(cert => {
+    ${htmlSection("Technical Skills", Object.entries(cleanSkills).filter(([, v]) => arrayToText(v)).map(([k, v]) => `<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(arrayToText(v))}</p>`).join(""))}
+    ${htmlSection("Certifications", cleanCertificates.map(cert => {
       const titleHtml = cert.link ? `<a href="${escapeHtml(cert.link)}" target="_blank" style="color: var(--primary); text-decoration: underline;">${escapeHtml(cert.title || "")}</a>` : escapeHtml(cert.title || "");
       return `<div class="resume-row"><strong>${titleHtml} -- ${escapeHtml(cert.issuer || "")}</strong><strong>${escapeHtml(cert.date || "")}</strong></div>`;
     }).join(""))}
-    ${htmlSection("Achievements", htmlBullets(resume.achievements || []))}
+    ${htmlSection("Achievements", htmlBullets(cleanAchievements))}
   `;
 }
 
