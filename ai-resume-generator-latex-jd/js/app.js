@@ -65,12 +65,12 @@ let draftData = {
   jobDescription: ""
 };
 
-// Step info details
 const STEP_INFO = {
   1: { title: "Create Profile", subtitle: "Provide your base credentials and academic history." },
   2: { title: "Experience & Credentials", subtitle: "Highlight your internships, scientific papers, and projects." },
   3: { title: "Job Target & AI Optimization", subtitle: "Paste the job description and trigger neural resume mapping." },
-  4: { title: "Optimized Resume Output", subtitle: "Download, copy, or print your tailored LaTeX document." }
+  4: { title: "Optimized Resume Output", subtitle: "Download, copy, or print your tailored LaTeX document." },
+  5: { title: "ATS Refinement Dashboard", subtitle: "Directly toggle project inclusions, manage certificates, and resolve missing skills in real-time." }
 };
 
 // Auto-resolve active step based on pathname
@@ -81,6 +81,8 @@ if (path.includes("experience.html")) {
   currentStep = 3;
 } else if (path.includes("output.html")) {
   currentStep = 4;
+} else if (path.includes("analysis.html")) {
+  currentStep = 5;
 } else {
   currentStep = 1;
 }
