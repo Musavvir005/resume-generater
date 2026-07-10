@@ -885,7 +885,7 @@ function addCard(container, title, fields, gridClass) {
   card.innerHTML = `
     <div class="dynamic-card-header">
       <strong>${title} ${index}</strong>
-      <button type="button" class="ghost-btn remove-btn">Remove</button>
+      <button type="button" class="ghost-btn remove-btn" aria-label="Remove ${escapeHtml(title)} ${index}">Remove</button>
     </div>
     <div class="grid ${gridClass}">
       ${fields.map(field => fieldTemplate(field)).join("")}
@@ -1185,6 +1185,8 @@ function createTagElement(editor, tagText) {
   const removeBtn = document.createElement("span");
   removeBtn.className = "tag-remove-btn";
   removeBtn.innerHTML = "&times;";
+  removeBtn.setAttribute("role", "button");
+  removeBtn.setAttribute("aria-label", `Delete skill tag ${tagText}`);
   removeBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     tagEl.remove();

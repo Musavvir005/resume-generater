@@ -1,17 +1,30 @@
+require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = "resume-generator-secret-key-123456";
-const DB_PATH = path.join(__dirname, "database.db");
+const JWT_SECRET = process.env.JWT_SECRET || "resume-generator-secret-key-123456";
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, "database.db");
+
+// Rate limiting for authentication routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: "Too many login/registration attempts from this IP, please try again after 15 minutes." }
+});
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : "*",
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(__dirname)); // Serve frontend static assets directly!
 
@@ -69,7 +82,7 @@ function authenticateToken(req, res, next) {
 // API Routes
 
 // 1. User Registration
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", authLimiter, (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -114,7 +127,7 @@ app.post("/api/auth/register", (req, res) => {
 });
 
 // 2. User Login
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", authLimiter, (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
