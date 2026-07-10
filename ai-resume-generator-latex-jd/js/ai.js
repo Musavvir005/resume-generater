@@ -561,6 +561,7 @@ function ensureCounts(aiResume, sourceData) {
     }));
   }
 
-  clean.atsScore = Number(clean.atsScore) || local.atsScore;
+  clean.atsScore = (aiResume && aiResume.atsScore !== undefined) ? Number(aiResume.atsScore) : local.atsScore;
+  clean.isAiGenerated = true;
   return clean;
 }

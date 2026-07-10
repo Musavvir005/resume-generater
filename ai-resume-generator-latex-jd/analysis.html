@@ -939,34 +939,88 @@
         // Sync global draftData memory
         draftData = data.input;
 
-        // Recompute selection state (generateLocalResume selects based on metrics)
-        const updatedResume = generateLocalResume(data.input);
+        const isAi = data.resume && data.resume.isAiGenerated;
+        const updatedResume = isAi ? { ...data.resume } : generateLocalResume(data.input);
 
-        // Retain selection arrays
-        const selectedProjTitles = new Set((data.resume.selectedProjects || []).map(p => String(p.title || "").toLowerCase()));
-        updatedResume.selectedProjects = updatedResume.selectedProjects.filter(p => selectedProjTitles.has(String(p.title || "").toLowerCase()));
+        if (isAi) {
+          updatedResume.isAiGenerated = true;
+          updatedResume.atsScore = data.resume.atsScore;
 
-        const selectedCertTitles = new Set((data.resume.selectedCertificates || []).map(c => String(c.title || "").toLowerCase()));
-        updatedResume.selectedCertificates = updatedResume.selectedCertificates.filter(c => selectedCertTitles.has(String(c.title || "").toLowerCase()));
+          if (itemType === "project") {
+            if (index !== -1) {
+              const oldTitle = data.input.projects[index].title;
+              updatedResume.selectedProjects = (updatedResume.selectedProjects || []).map(p => {
+                if (String(p.title || "").toLowerCase() === String(oldTitle || "").toLowerCase()) {
+                  return {
+                    title: projectItem.title,
+                    technologies: splitList(projectItem.technologies),
+                    link: projectItem.link || "",
+                    bullets: generateProjectBullets(projectItem, data.resume.jdKeywords || [], new Map(), index)
+                  };
+                }
+                return p;
+              });
+            } else {
+              if ((updatedResume.selectedProjects || []).length < data.input.projectCount) {
+                updatedResume.selectedProjects.push({
+                  title: projectItem.title,
+                  technologies: splitList(projectItem.technologies),
+                  link: projectItem.link || "",
+                  bullets: generateProjectBullets(projectItem, data.resume.jdKeywords || [], new Map(), updatedResume.selectedProjects.length)
+                });
+              }
+            }
+          } else if (itemType === "certificate") {
+            if (index !== -1) {
+              const oldTitle = data.input.certificates[index].title;
+              updatedResume.selectedCertificates = (updatedResume.selectedCertificates || []).map(c => {
+                if (String(c.title || "").toLowerCase() === String(oldTitle || "").toLowerCase()) {
+                  return {
+                    title: certItem.title,
+                    issuer: certItem.issuer,
+                    date: certItem.date,
+                    link: certItem.link || "",
+                    reason: relevanceReason(certItem.skills || certItem.title, data.resume.jdKeywords || [])
+                  };
+                }
+                return c;
+              });
+            } else {
+              if ((updatedResume.selectedCertificates || []).length < data.input.certificateCount) {
+                updatedResume.selectedCertificates.push({
+                  title: certItem.title,
+                  issuer: certItem.issuer,
+                  date: certItem.date,
+                  link: certItem.link || "",
+                  reason: relevanceReason(certItem.skills || certItem.title, data.resume.jdKeywords || [])
+                });
+              }
+            }
+          }
+        } else {
+          // Retain selection arrays for offline
+          const selectedProjTitles = new Set((data.resume.selectedProjects || []).map(p => String(p.title || "").toLowerCase()));
+          updatedResume.selectedProjects = updatedResume.selectedProjects.filter(p => selectedProjTitles.has(String(p.title || "").toLowerCase()));
 
-        // Ensure limit/quota
-        const maxProjs = Math.min(data.input.projectCount || 3, updatedResume.selectedProjects.length);
-        updatedResume.selectedProjects = updatedResume.selectedProjects.slice(0, maxProjs);
-        const maxCerts = Math.min(data.input.certificateCount || 3, updatedResume.selectedCertificates.length);
-        updatedResume.selectedCertificates = updatedResume.selectedCertificates.slice(0, maxCerts);
+          const selectedCertTitles = new Set((data.resume.selectedCertificates || []).map(c => String(c.title || "").toLowerCase()));
+          updatedResume.selectedCertificates = updatedResume.selectedCertificates.filter(c => selectedCertTitles.has(String(c.title || "").toLowerCase()));
 
-        // Recalculate score
-        updatedResume.atsScore = estimateDetailedAtsScore(
-          data.input,
-          updatedResume.selectedProjects,
-          updatedResume.selectedCertificates,
-          updatedResume.jdKeywords || []
-        );
+          const maxProjs = Math.min(data.input.projectCount || 3, updatedResume.selectedProjects.length);
+          updatedResume.selectedProjects = updatedResume.selectedProjects.slice(0, maxProjs);
+          const maxCerts = Math.min(data.input.certificateCount || 3, updatedResume.selectedCertificates.length);
+          updatedResume.selectedCertificates = updatedResume.selectedCertificates.slice(0, maxCerts);
+
+          updatedResume.atsScore = estimateDetailedAtsScore(
+            data.input,
+            updatedResume.selectedProjects,
+            updatedResume.selectedCertificates,
+            updatedResume.jdKeywords || []
+          );
+        }
 
         localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
         localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
 
-        // Re-render dashboard columns
         renderResult(data.input, updatedResume);
         renderTuningDashboard();
         closeTuningModal();
@@ -1001,15 +1055,22 @@
         draftData = data.input;
 
         // Recompute
-        const updatedResume = generateLocalResume(data.input);
+        const isAi = data.resume && data.resume.isAiGenerated;
+        const updatedResume = isAi ? { ...data.resume } : generateLocalResume(data.input);
         updatedResume.selectedProjects = data.resume.selectedProjects;
         updatedResume.selectedCertificates = data.resume.selectedCertificates;
-        updatedResume.atsScore = estimateDetailedAtsScore(
-          data.input,
-          updatedResume.selectedProjects,
-          updatedResume.selectedCertificates,
-          updatedResume.jdKeywords || []
-        );
+
+        if (isAi) {
+          updatedResume.isAiGenerated = true;
+          updatedResume.atsScore = data.resume.atsScore;
+        } else {
+          updatedResume.atsScore = estimateDetailedAtsScore(
+            data.input,
+            updatedResume.selectedProjects,
+            updatedResume.selectedCertificates,
+            updatedResume.jdKeywords || []
+          );
+        }
 
         localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
         localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
@@ -1046,15 +1107,22 @@
         draftData = data.input;
 
         // Recompute
-        const updatedResume = generateLocalResume(data.input);
+        const isAi = data.resume && data.resume.isAiGenerated;
+        const updatedResume = isAi ? { ...data.resume } : generateLocalResume(data.input);
         updatedResume.selectedProjects = data.resume.selectedProjects;
         updatedResume.selectedCertificates = data.resume.selectedCertificates;
-        updatedResume.atsScore = estimateDetailedAtsScore(
-          data.input,
-          updatedResume.selectedProjects,
-          updatedResume.selectedCertificates,
-          updatedResume.jdKeywords || []
-        );
+
+        if (isAi) {
+          updatedResume.isAiGenerated = true;
+          updatedResume.atsScore = data.resume.atsScore;
+        } else {
+          updatedResume.atsScore = estimateDetailedAtsScore(
+            data.input,
+            updatedResume.selectedProjects,
+            updatedResume.selectedCertificates,
+            updatedResume.jdKeywords || []
+          );
+        }
 
         localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
         localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
@@ -1106,9 +1174,16 @@
         data.resume.selectedProjects = selectedProjects;
 
         // Re-score
-        const updatedResume = generateLocalResume(input);
+        const isAi = data.resume && data.resume.isAiGenerated;
+        const updatedResume = isAi ? { ...data.resume } : generateLocalResume(input);
         updatedResume.selectedProjects = selectedProjects; // Preserve selection choice
-        updatedResume.atsScore = estimateDetailedAtsScore(input, selectedProjects, data.resume.selectedCertificates, updatedResume.jdKeywords);
+
+        if (isAi) {
+          updatedResume.isAiGenerated = true;
+          updatedResume.atsScore = data.resume.atsScore;
+        } else {
+          updatedResume.atsScore = estimateDetailedAtsScore(input, selectedProjects, data.resume.selectedCertificates, updatedResume.jdKeywords);
+        }
 
         localStorage.setItem("latestResumeResultData", JSON.stringify({ input, resume: updatedResume }));
         localStorage.setItem("latestResumeLatex", buildLatexResume(input, updatedResume));
@@ -1153,10 +1228,17 @@
         // Save back
         data.resume.selectedCertificates = selectedCerts;
 
-        const updatedResume = generateLocalResume(input);
+        const isAi = data.resume && data.resume.isAiGenerated;
+        const updatedResume = isAi ? { ...data.resume } : generateLocalResume(input);
         updatedResume.selectedCertificates = selectedCerts;
         updatedResume.selectedProjects = data.resume.selectedProjects; // Preserve project selection
-        updatedResume.atsScore = estimateDetailedAtsScore(input, data.resume.selectedProjects, selectedCerts, updatedResume.jdKeywords);
+
+        if (isAi) {
+          updatedResume.isAiGenerated = true;
+          updatedResume.atsScore = data.resume.atsScore;
+        } else {
+          updatedResume.atsScore = estimateDetailedAtsScore(input, data.resume.selectedProjects, selectedCerts, updatedResume.jdKeywords);
+        }
 
         localStorage.setItem("latestResumeResultData", JSON.stringify({ input, resume: updatedResume }));
         localStorage.setItem("latestResumeLatex", buildLatexResume(input, updatedResume));

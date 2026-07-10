@@ -1416,56 +1416,76 @@ function addSkillToCategory(textareaId, categoryKey, skillName) {
 }
 
 function triggerAutoRecompute() {
-  const resume = generateLocalResume(draftData);
-  
-  // Preserve manually selected projects/certificates if present
+  let isAi = false;
+  let savedResume = null;
   const savedJson = localStorage.getItem("latestResumeResultData");
   if (savedJson) {
     try {
       const data = JSON.parse(savedJson);
-      if (data.resume && Array.isArray(data.resume.selectedProjects)) {
-        resume.selectedProjects = data.resume.selectedProjects;
+      if (data.resume && data.resume.isAiGenerated) {
+        isAi = true;
+        savedResume = data.resume;
       }
-      if (data.resume && Array.isArray(data.resume.selectedCertificates)) {
-        resume.selectedCertificates = data.resume.selectedCertificates;
-      }
-      
-      // Re-run ATS scoring based on updated skills and manual selections
-      const jdKeywords = resume.jdKeywords || [];
-      resume.atsScore = estimateDetailedAtsScore(
-        draftData, 
-        resume.selectedProjects, 
-        resume.selectedCertificates, 
-        jdKeywords
-      );
-      
-      // Recompute keyword matching metrics
-      const matchedSet = new Set();
-      const missingSet = new Set(jdKeywords);
-      const allSkills = Object.values(draftData.skills || {}).join(", ");
-      
-      const projectsText = resume.selectedProjects.map(p => {
-        const techText = Array.isArray(p.technologies) ? p.technologies.join(" ") : String(p.technologies || "");
-        const bulletsText = Array.isArray(p.bullets) ? p.bullets.join(" ") : String(p.bullets || "");
-        return (p.title || "") + " " + techText + " " + bulletsText;
-      }).join(" ");
-      
-      const certsText = resume.selectedCertificates.map(c => (c.title || "") + " " + (c.reason || c.issuer || "")).join(" ");
-      const expText = (draftData.experience || []).map(e => (e.role || "") + " " + (e.bullets || "")).join(" ");
-      
-      const textContent = (allSkills + " " + projectsText + " " + certsText + " " + expText).toLowerCase();
-      
-      jdKeywords.forEach(kw => {
-        if (textContent.includes(kw.toLowerCase())) {
-          matchedSet.add(kw);
-          missingSet.delete(kw);
-        }
-      });
-      
-      resume.matchedKeywords = [...matchedSet];
-      resume.missingKeywords = [...missingSet];
     } catch (err) {
-      console.error("Failed to preserve manual selections during auto-recompute:", err);
+      console.error(err);
+    }
+  }
+
+  const resume = isAi ? { ...savedResume } : generateLocalResume(draftData);
+  
+  if (isAi) {
+    resume.isAiGenerated = true;
+    resume.atsScore = savedResume.atsScore;
+    resume.skills = optimizeSkills(draftData.skills, resume.jdKeywords || []);
+  } else {
+    // Preserve manually selected projects/certificates if present
+    if (savedJson) {
+      try {
+        const data = JSON.parse(savedJson);
+        if (data.resume && Array.isArray(data.resume.selectedProjects)) {
+          resume.selectedProjects = data.resume.selectedProjects;
+        }
+        if (data.resume && Array.isArray(data.resume.selectedCertificates)) {
+          resume.selectedCertificates = data.resume.selectedCertificates;
+        }
+        
+        // Re-run ATS scoring based on updated skills and manual selections
+        const jdKeywords = resume.jdKeywords || [];
+        resume.atsScore = estimateDetailedAtsScore(
+          draftData, 
+          resume.selectedProjects, 
+          resume.selectedCertificates, 
+          jdKeywords
+        );
+        
+        // Recompute keyword matching metrics
+        const matchedSet = new Set();
+        const missingSet = new Set(jdKeywords);
+        const allSkills = Object.values(draftData.skills || {}).join(", ");
+        
+        const projectsText = resume.selectedProjects.map(p => {
+          const techText = Array.isArray(p.technologies) ? p.technologies.join(" ") : String(p.technologies || "");
+          const bulletsText = Array.isArray(p.bullets) ? p.bullets.join(" ") : String(p.bullets || "");
+          return (p.title || "") + " " + techText + " " + bulletsText;
+        }).join(" ");
+        
+        const certsText = resume.selectedCertificates.map(c => (c.title || "") + " " + (c.reason || c.issuer || "")).join(" ");
+        const expText = (draftData.experience || []).map(e => (e.role || "") + " " + (e.bullets || "")).join(" ");
+        
+        const textContent = (allSkills + " " + projectsText + " " + certsText + " " + expText).toLowerCase();
+        
+        jdKeywords.forEach(kw => {
+          if (textContent.includes(kw.toLowerCase())) {
+            matchedSet.add(kw);
+            missingSet.delete(kw);
+          }
+        });
+        
+        resume.matchedKeywords = [...matchedSet];
+        resume.missingKeywords = [...missingSet];
+      } catch (err) {
+        console.error("Failed to preserve manual selections during auto-recompute:", err);
+      }
     }
   }
 
