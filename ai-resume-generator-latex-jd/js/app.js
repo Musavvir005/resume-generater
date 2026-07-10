@@ -1127,6 +1127,14 @@ function setupInteractiveSkillsEditor() {
     // Populate tags from textarea value
     renderTagsFromTextarea(editor, textarea.value);
     
+    // Make tags list sortable/draggable
+    const tagList = editor.querySelector(".tag-list");
+    if (tagList) {
+      makeListSortable(tagList, () => {
+        updateTextareaFromEditor(editor);
+      });
+    }
+    
     // Render helper missing skills in form
     renderMissingSkillsHelper(editor);
   });
@@ -1150,6 +1158,7 @@ function renderTagsFromTextarea(editor, textValue) {
 function createTagElement(editor, tagText) {
   const tagEl = document.createElement("span");
   tagEl.className = "tag-item";
+  tagEl.setAttribute("draggable", "true");
   
   const textSpan = document.createElement("span");
   textSpan.className = "tag-text";
@@ -1415,5 +1424,45 @@ function triggerAutoRecompute() {
   // Re-render
   renderResult(draftData, resume);
   showStatus("Skill added and resume analysis recalculated!", false, true);
+}
+
+function makeListSortable(container, onReorder) {
+  if (!container) return;
+
+  let dragEl = null;
+
+  container.addEventListener("dragstart", (e) => {
+    const item = e.target.closest(".tuning-item") || e.target.closest(".tag-item");
+    if (!item) return;
+    dragEl = item;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+  });
+
+  container.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const target = e.target.closest(".tuning-item") || e.target.closest(".tag-item");
+    if (target && target !== dragEl && target.parentNode === container) {
+      const bounding = target.getBoundingClientRect();
+      const offset = e.clientY - bounding.top - bounding.height / 2;
+      if (offset > 0) {
+        container.insertBefore(dragEl, target.nextSibling);
+      } else {
+        container.insertBefore(dragEl, target);
+      }
+    }
+  });
+
+  container.addEventListener("dragend", (e) => {
+    const item = e.target.closest(".tuning-item") || e.target.closest(".tag-item");
+    if (item) {
+      item.classList.remove("dragging");
+    }
+    dragEl = null;
+    if (onReorder) {
+      onReorder();
+    }
+  });
 }
 

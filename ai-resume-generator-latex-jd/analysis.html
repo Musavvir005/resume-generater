@@ -525,6 +525,8 @@
           const isSelected = selectedProjectTitles.has(String(proj.title || "").toLowerCase());
           const item = document.createElement("div");
           item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
+          item.setAttribute("draggable", "true");
+          item.setAttribute("data-index", idx);
 
           item.innerHTML = `
             <div class="tuning-item-details">
@@ -556,6 +558,8 @@
           const isSelected = selectedCertTitles.has(String(cert.title || "").toLowerCase());
           const item = document.createElement("div");
           item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
+          item.setAttribute("draggable", "true");
+          item.setAttribute("data-index", idx);
 
           item.innerHTML = `
             <div class="tuning-item-details">
@@ -597,7 +601,130 @@
           });
         }
 
+        // Activate drag & drop reordering
+        makeListSortable(projectsList, handleProjectReorder);
+        makeListSortable(certsList, handleCertReorder);
+
       } catch (err) {
+        console.error("Failed to render tuning panel:", err);
+      }
+    }
+
+    function handleProjectReorder() {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+      
+      try {
+        const data = JSON.parse(savedJson);
+        const projectsList = document.getElementById("projectsTuningList");
+        const items = [...projectsList.querySelectorAll(".tuning-item")];
+        
+        // Re-map projects based on new DOM order
+        const reorderedProjects = items.map(item => {
+          const origIdx = parseInt(item.getAttribute("data-index"), 10);
+          return data.input.projects[origIdx];
+        });
+        
+        data.input.projects = reorderedProjects;
+        
+        // Save
+        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
+        draftData = data.input;
+        
+        // Also reorder selection array to match new input order if they are selected
+        const selectedProjTitles = new Set((data.resume.selectedProjects || []).map(p => String(p.title || "").toLowerCase()));
+        
+        // Regenerate resume with new project order
+        const updatedResume = generateLocalResume(data.input);
+        updatedResume.selectedProjects = updatedResume.selectedProjects.filter(p => selectedProjTitles.has(String(p.title || "").toLowerCase()));
+        
+        // Restore certificates selection
+        updatedResume.selectedCertificates = data.resume.selectedCertificates;
+        
+        // Ensure max/quota
+        const maxProjs = Math.min(data.input.projectCount || 3, updatedResume.selectedProjects.length);
+        updatedResume.selectedProjects = updatedResume.selectedProjects.slice(0, maxProjs);
+        
+        // Recalculate score
+        updatedResume.atsScore = estimateDetailedAtsScore(
+          data.input, 
+          updatedResume.selectedProjects, 
+          updatedResume.selectedCertificates, 
+          updatedResume.jdKeywords || []
+        );
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
+        
+        // Re-render preview
+        renderResult(data.input, updatedResume);
+        
+        // Refresh dashboard (so index attributes are reset to match new array order)
+        renderTuningDashboard();
+        showStatus("Project order updated.", false, true);
+        
+      } catch (err) {
+        console.error("Failed to reorder projects:", err);
+      }
+    }
+
+    function handleCertReorder() {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+      
+      try {
+        const data = JSON.parse(savedJson);
+        const certsList = document.getElementById("certificatesTuningList");
+        const items = [...certsList.querySelectorAll(".tuning-item")];
+        
+        // Re-map certificates based on new DOM order
+        const reorderedCerts = items.map(item => {
+          const origIdx = parseInt(item.getAttribute("data-index"), 10);
+          return data.input.certificates[origIdx];
+        });
+        
+        data.input.certificates = reorderedCerts;
+        
+        // Save
+        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
+        draftData = data.input;
+        
+        // Also reorder selection array
+        const selectedCertTitles = new Set((data.resume.selectedCertificates || []).map(c => String(c.title || "").toLowerCase()));
+        
+        // Regenerate resume with new certificate order
+        const updatedResume = generateLocalResume(data.input);
+        updatedResume.selectedCertificates = updatedResume.selectedCertificates.filter(c => selectedCertTitles.has(String(c.title || "").toLowerCase()));
+        
+        // Restore projects selection
+        updatedResume.selectedProjects = data.resume.selectedProjects;
+        
+        // Ensure max/quota
+        const maxCerts = Math.min(data.input.certificateCount || 3, updatedResume.selectedCertificates.length);
+        updatedResume.selectedCertificates = updatedResume.selectedCertificates.slice(0, maxCerts);
+        
+        // Recalculate score
+        updatedResume.atsScore = estimateDetailedAtsScore(
+          data.input, 
+          updatedResume.selectedProjects, 
+          updatedResume.selectedCertificates, 
+          updatedResume.jdKeywords || []
+        );
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
+        
+        // Re-render preview
+        renderResult(data.input, updatedResume);
+        
+        // Refresh dashboard
+        renderTuningDashboard();
+        showStatus("Certificate order updated.", false, true);
+        
+      } catch (err) {
+        console.error("Failed to reorder certificates:", err);
+      }
+    }
         console.error("Failed to render tuning panel:", err);
       }
     }

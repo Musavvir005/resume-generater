@@ -1211,3 +1211,16 @@ button:disabled {
   }
 }
 
+/* Drag and Drop sortable styles */
+.tuning-item, .tag-item {
+  cursor: grab;
+  user-select: none;
+}
+.tuning-item:active, .tag-item:active {
+  cursor: grabbing;
+}
+.tuning-item.dragging, .tag-item.dragging {
+  opacity: 0.4;
+  border: 1px dashed var(--primary) !important;
+  background: var(--panel-soft) !important;
+}
