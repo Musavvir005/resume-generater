@@ -274,7 +274,7 @@ function updateStepperUI() {
     elements.feedSubtitle.textContent = STEP_INFO[currentStep].subtitle;
   }
 
-  if (!elements.prevBtn || !elements.nextBtn) return;
+  if (!elements.prevBtn || !elements.nextBtn || !elements.wizardNav) return;
 
   if (currentStep === 1) {
     elements.prevBtn.style.visibility = "hidden";
@@ -1005,6 +1005,7 @@ function clearForm(addEmpty = true) {
   };
   localStorage.removeItem("draftResumeData");
   
+  setupInteractiveSkillsEditor();
   showStatus("Form cleared.");
 }
 
