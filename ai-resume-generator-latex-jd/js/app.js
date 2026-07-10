@@ -541,12 +541,27 @@ function populateFormFields(data) {
   if (document.getElementById("linkedin")) setValue("linkedin", draftData.linkedin);
   if (document.getElementById("leetcode")) setValue("leetcode", draftData.leetcode);
   
-  if (document.getElementById("skillsLanguages") && draftData.skills) {
-    setValue("skillsLanguages", draftData.skills.languages);
-    setValue("skillsFrameworks", draftData.skills.frameworks);
-    setValue("skillsDatabases", draftData.skills.databases);
-    setValue("skillsTools", draftData.skills.tools);
-    setValue("skillsCore", draftData.skills.core);
+  if (document.getElementById("skillsLanguages")) {
+    let skillsObj = draftData.skills || {};
+    if (currentStep === 5) {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (savedJson) {
+        try {
+          const resData = JSON.parse(savedJson);
+          if (resData.resume && resData.resume.skills) {
+            skillsObj = resData.resume.skills;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    const formatSkillList = (val) => Array.isArray(val) ? val.join(", ") : String(val || "");
+    setValue("skillsLanguages", formatSkillList(skillsObj.languages));
+    setValue("skillsFrameworks", formatSkillList(skillsObj.frameworks));
+    setValue("skillsDatabases", formatSkillList(skillsObj.databases));
+    setValue("skillsTools", formatSkillList(skillsObj.tools));
+    setValue("skillsCore", formatSkillList(skillsObj.core));
   }
   
   if (document.getElementById("jobDescription")) setValue("jobDescription", draftData.jobDescription);
