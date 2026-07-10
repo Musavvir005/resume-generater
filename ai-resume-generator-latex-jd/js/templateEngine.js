@@ -194,17 +194,13 @@ function formatProjectsLatex(projects = []) {
 }
 
 function formatSkillsLatex(skills = {}) {
-  const rows = [
-    ["Languages", skills["Languages"]],
-    ["Frameworks \\& Libraries", skills["Frameworks & Libraries"] || skills["Frameworks"]],
-    ["Databases", skills["Databases"]],
-    ["Developer Tools", skills["Developer Tools"]],
-    ["Core Competencies", skills["Core Competencies"]]
-  ].filter(([, values]) => arrayToText(values));
+  const rows = Object.entries(skills)
+    .map(([category, values]) => [category, values])
+    .filter(([, values]) => arrayToText(values));
 
   if (!rows.length) return "";
 
-  return `\\section{Technical Skills}\n \\begin{itemize}[leftmargin=0.15in, label={}, itemsep=0pt, parsep=0pt, topsep=0pt]\n    \\small{\\item{\n${rows.map(([label, values]) => `     \\textbf{${label}}{: ${escapeLatex(arrayToText(values))}} \\\\`).join("\n")}\n    }}\n \\end{itemize}`;
+  return `\\section{Technical Skills}\n \\begin{itemize}[leftmargin=0.15in, label={}, itemsep=0pt, parsep=0pt, topsep=0pt]\n    \\small{\\item{\n${rows.map(([label, values]) => `     \\textbf{${escapeLatex(label)}}{: ${escapeLatex(arrayToText(values))}} \\\\`).join("\n")}\n    }}\n \\end{itemize}`;
 }
 
 function formatCertificatesLatex(certificates = []) {
