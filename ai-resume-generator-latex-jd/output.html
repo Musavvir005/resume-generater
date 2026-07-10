@@ -97,12 +97,22 @@
           <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; height: 100%;">
             
             <div style="display: flex; flex-direction: column; height: 100%;">
-              <h3 style="font-size: 0.82rem; font-weight: 750; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Resume Preview</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 0.82rem; font-weight: 750; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Resume Preview</h3>
+                <button type="button" onclick="location.href='analysis.html'" class="primary-btn small-btn" style="background-color: var(--primary); font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; display: flex; align-items: center; gap: 4px;">
+                  <i class="fas fa-sliders-h"></i> Adjust Selections
+                </button>
+              </div>
               <div id="resumePreview" class="resume-preview empty-state" style="flex-grow: 1; overflow-y: auto;">Generated resume preview will appear here. Enter details and generate to start.</div>
             </div>
 
             <div style="display: flex; flex-direction: column; height: 100%; background: var(--panel-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-y: auto; max-height: calc(100vh - 280px);">
-              <h3 style="font-size: 0.82rem; font-weight: 750; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); padding-bottom: 6px;">ATS Analysis & Keywords</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                <h3 style="font-size: 0.82rem; font-weight: 750; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0; border: 0; padding: 0;">ATS Analysis & Keywords</h3>
+                <button type="button" onclick="location.href='analysis.html'" class="ghost-btn small-btn" style="font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; display: flex; align-items: center; gap: 4px; color: var(--primary); border: 1px solid var(--primary);">
+                  <i class="fas fa-sliders-h"></i> Refine Keywords
+                </button>
+              </div>
               <div id="analysisOutput" class="analysis-box">JD analysis details will appear here.</div>
             </div>
 
