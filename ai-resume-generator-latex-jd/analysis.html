@@ -444,14 +444,20 @@
               if (!data.input) data.input = {};
               if (!data.resume) data.resume = {};
 
-              // 2. Read latest skills from DOM textareas
-              data.input.skills = {
-                languages: document.getElementById("skillsLanguages") ? document.getElementById("skillsLanguages").value : "",
-                frameworks: document.getElementById("skillsFrameworks") ? document.getElementById("skillsFrameworks").value : "",
-                databases: document.getElementById("skillsDatabases") ? document.getElementById("skillsDatabases").value : "",
-                tools: document.getElementById("skillsTools") ? document.getElementById("skillsTools").value : "",
-                core: document.getElementById("skillsCore") ? document.getElementById("skillsCore").value : ""
-              };
+              // 2. Read latest skills from DOM textareas dynamically
+              data.input.skills = {};
+              document.querySelectorAll("textarea[id^='skills_']").forEach(textarea => {
+                const key = textarea.getAttribute("data-key");
+                if (key) {
+                  data.input.skills[key] = textarea.value;
+                }
+              });
+
+              // Update data.resume.skills to be in sync
+              data.resume.skills = {};
+              Object.keys(data.input.skills).forEach(key => {
+                data.resume.skills[key] = data.input.skills[key].split(",").map(s => s.trim()).filter(Boolean);
+              });
 
               // Update draft data in localStorage too
               localStorage.setItem("draftResumeData", JSON.stringify(data.input));
@@ -751,6 +757,28 @@
             });
             keywordsContainer.appendChild(chip);
           });
+        }
+
+        // Render dynamic technical skills categories
+        const skillsGrid = document.querySelector(".skills-tuning-grid");
+        if (skillsGrid && resume.skills) {
+          skillsGrid.innerHTML = "";
+          const categoriesList = [];
+          Object.keys(resume.skills).forEach((categoryName, idx) => {
+            const val = resume.skills[categoryName];
+            const textVal = Array.isArray(val) ? val.join(", ") : String(val || "");
+            const id = `skills_${idx}`;
+            
+            const card = document.createElement("div");
+            card.className = "skills-tuning-card";
+            card.innerHTML = `
+              <h4>${escapeHtml(categoryName)}</h4>
+              <textarea id="${id}" data-label="${escapeHtml(categoryName)}" data-key="${escapeHtml(categoryName)}" style="display:none;">${escapeHtml(textVal)}</textarea>
+            `;
+            skillsGrid.appendChild(card);
+            categoriesList.push({ id, label: categoryName, key: categoryName });
+          });
+          setupInteractiveSkillsEditor(categoriesList);
         }
 
       } catch (err) {

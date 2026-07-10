@@ -1098,14 +1098,27 @@ function downloadFile(content, filename, type) {
 // 🛠️ Interactive Skills Tag Editor & ATS Popover
 // ==========================================
 
-function setupInteractiveSkillsEditor() {
-  const categories = [
-    { id: "skillsLanguages", label: "Languages", key: "languages" },
-    { id: "skillsFrameworks", label: "Frameworks & Libraries", key: "frameworks" },
-    { id: "skillsDatabases", label: "Databases", key: "databases" },
-    { id: "skillsTools", label: "Developer Tools", key: "tools" },
-    { id: "skillsCore", label: "Core Competencies", key: "core" }
-  ];
+function setupInteractiveSkillsEditor(categories = null) {
+  if (!categories) {
+    if (currentStep === 5) return; // Exit early, renderTuningDashboard will build them!
+    categories = [];
+    const textareas = document.querySelectorAll("textarea[id^='skills']");
+    textareas.forEach(textarea => {
+      const id = textarea.id;
+      const label = textarea.getAttribute("data-label") || id.replace("skills", "");
+      const key = textarea.getAttribute("data-key") || label.toLowerCase();
+      categories.push({ id, label, key });
+    });
+  }
+
+  // Clear existing editors for these categories to prevent duplicates
+  categories.forEach(cat => {
+    const textarea = document.getElementById(cat.id);
+    if (textarea) {
+      const stale = textarea.parentNode.querySelector(".skills-tag-editor");
+      if (stale) stale.remove();
+    }
+  });
 
   categories.forEach(cat => {
     const textarea = document.getElementById(cat.id);
@@ -1394,13 +1407,23 @@ function showAddMissingSkillMenu(event, skillName) {
   modal.style.top = `${event.pageY + 10}px`;
   modal.style.left = `${event.pageX + 10}px`;
 
-  const categories = [
-    { name: "Languages", key: "languages", id: "skillsLanguages" },
-    { name: "Frameworks & Libraries", key: "frameworks", id: "skillsFrameworks" },
-    { name: "Databases", key: "databases", id: "skillsDatabases" },
-    { name: "Developer Tools", key: "tools", id: "skillsTools" },
-    { name: "Core Competencies", key: "core", id: "skillsCore" }
-  ];
+  const categories = [];
+  document.querySelectorAll("textarea[id^='skills']").forEach(textarea => {
+    const id = textarea.id;
+    const label = textarea.getAttribute("data-label") || id.replace("skills", "");
+    const key = textarea.getAttribute("data-key") || label.toLowerCase();
+    categories.push({ name: label, key, id });
+  });
+
+  if (categories.length === 0) {
+    categories.push(
+      { name: "Languages", key: "languages", id: "skillsLanguages" },
+      { name: "Frameworks & Libraries", key: "frameworks", id: "skillsFrameworks" },
+      { name: "Databases", key: "databases", id: "skillsDatabases" },
+      { name: "Developer Tools", key: "tools", id: "skillsTools" },
+      { name: "Core Competencies", key: "core", id: "skillsCore" }
+    );
+  }
 
   modal.innerHTML = `<span style="font-size:0.7rem; color:var(--text-muted); font-weight:700; padding:4px 8px; border-bottom:1px solid var(--border);">ADD "${escapeHtml(skillName).toUpperCase()}" TO:</span>`;
 
