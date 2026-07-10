@@ -1085,7 +1085,7 @@ button:disabled {
 }
 
 .skills-tag-editor .tag-item .tag-remove-btn {
-  color: var(--text-muted);
+  color: var(--danger);
   font-weight: 800;
   font-size: 0.85rem;
   cursor: pointer;
@@ -1095,6 +1095,8 @@ button:disabled {
   width: 14px;
   height: 14px;
   border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  margin-left: 4px;
   transition: all 0.15s ease;
 }
 
