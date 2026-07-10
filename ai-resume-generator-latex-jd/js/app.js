@@ -642,6 +642,14 @@ async function handleAiGenerate(event) {
 }
 
 function handleLocalGenerate() {
+  const apiKey = elements.apiKey ? elements.apiKey.value.trim() : "";
+  if (apiKey) {
+    showStatus("API key detected. Using AI Optimization generation...", false, true);
+    const mockEvent = { preventDefault: () => {} };
+    handleAiGenerate(mockEvent);
+    return;
+  }
+
   const data = collectData();
   const resume = generateLocalResume(data);
   
