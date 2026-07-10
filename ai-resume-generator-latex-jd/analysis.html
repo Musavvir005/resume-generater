@@ -1,23 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ResuCraft AI - ATS Refinement & Analysis</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
   <link rel="stylesheet" href="css/style.css" />
-  
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="ResuCraft AI - Job-Description-Based Resume Generator" />
-  <meta property="og:description" content="Optimize and align your LaTeX resume for target Job Descriptions using local ATS keyword matching and Gemini AI neural generation." />
+  <meta property="og:description"
+    content="Optimize and align your LaTeX resume for target Job Descriptions using local ATS keyword matching and Gemini AI neural generation." />
   <meta property="og:image" content="https://resucraft-ai.example.com/assets/og-preview.png" />
-  
+
   <style>
     /* Dedicated styles for interactive tuning page */
     .tuning-section {
       margin-bottom: 28px;
     }
+
     .tuning-section-title {
       font-family: var(--font-heading);
       font-size: 1.1rem;
@@ -29,11 +32,13 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .tuning-list {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
+
     .tuning-item {
       display: flex;
       justify-content: space-between;
@@ -44,18 +49,22 @@
       border-radius: var(--radius);
       transition: all 0.2s ease;
     }
+
     .tuning-item:hover {
       box-shadow: var(--shadow-sm);
       border-color: rgba(var(--primary-rgb), 0.2);
     }
+
     .tuning-item.selected {
       border-left: 4px solid var(--success);
       background: rgba(16, 185, 129, 0.02);
     }
+
     .tuning-item.unselected {
       border-left: 4px solid var(--text-muted);
       opacity: 0.85;
     }
+
     .tuning-item-details {
       display: flex;
       flex-direction: column;
@@ -63,14 +72,17 @@
       flex-grow: 1;
       margin-right: 16px;
     }
+
     .tuning-item-title {
       font-weight: 700;
       font-size: 0.88rem;
     }
+
     .tuning-item-meta {
       font-size: 0.76rem;
       color: var(--text-muted);
     }
+
     .tuning-item-badge {
       display: inline-block;
       font-size: 0.65rem;
@@ -80,34 +92,38 @@
       text-transform: uppercase;
       width: fit-content;
     }
+
     .tuning-item-badge.selected-badge {
       background: rgba(16, 185, 129, 0.1);
       color: var(--success);
     }
+
     .tuning-item-badge.unselected-badge {
       background: var(--secondary);
       color: var(--text-muted);
     }
-    
+
     /* Interactive Skills Categories Tuning */
     .skills-tuning-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 16px;
     }
+
     .skills-tuning-card {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px;
     }
+
     .skills-tuning-card h4 {
       font-size: 0.85rem;
       font-weight: 750;
       margin-bottom: 8px;
       color: var(--text);
     }
-    
+
     /* Missing Skills section in Tuning */
     .missing-skills-section {
       background: rgba(239, 68, 68, 0.02);
@@ -118,6 +134,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- 1. TOP HEADER NAVIGATION -->
@@ -172,10 +189,10 @@
 
   <!-- 2. SPLIT LAYOUT APP BODY -->
   <div class="app-body">
-    
+
     <!-- Left Column: Fine Tuning Interactive Interface -->
     <main class="center-feed">
-      
+
       <div class="feed-header">
         <h1>ATS Refinement Dashboard</h1>
         <p>Directly toggle project inclusions, manage certificates, and resolve missing skills in real-time.</p>
@@ -183,7 +200,8 @@
 
       <!-- Missing Skills Helper Panel -->
       <div class="missing-skills-section">
-        <h3 style="font-size: 0.9rem; font-weight: 750; color: var(--danger); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+        <h3
+          style="font-size: 0.9rem; font-weight: 750; color: var(--danger); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
           <i class="fas fa-exclamation-circle"></i> Detected Missing Keywords
         </h3>
         <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 12px;">
@@ -196,9 +214,17 @@
 
       <!-- Section 1: Projects Selector -->
       <section class="tuning-section">
-        <div class="tuning-section-title">
+        <div class="tuning-section-title"
+          style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <span>Target Technical Projects</span>
-          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" id="projectQuotaText">Selected: 0/0</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;"
+              id="projectQuotaText">Selected: 0/0</span>
+            <button type="button" onclick="openAddProjectModal()" class="primary-btn small-btn"
+              style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background-color: var(--primary);">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
         </div>
         <div class="tuning-list" id="projectsTuningList">
           <!-- Projects list with Add/Remove buttons -->
@@ -207,9 +233,17 @@
 
       <!-- Section 2: Certificates Selector -->
       <section class="tuning-section">
-        <div class="tuning-section-title">
+        <div class="tuning-section-title"
+          style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <span>Certifications</span>
-          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;" id="certificateQuotaText">Selected: 0/0</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;"
+              id="certificateQuotaText">Selected: 0/0</span>
+            <button type="button" onclick="openAddCertModal()" class="primary-btn small-btn"
+              style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background-color: var(--primary);">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
         </div>
         <div class="tuning-list" id="certificatesTuningList">
           <!-- Certificates list with Add/Remove buttons -->
@@ -247,7 +281,8 @@
 
       <!-- Sticky Save/Update actions -->
       <div class="button-row" style="margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--border);">
-        <button id="updatePreviewBtn" type="button" class="primary-btn" style="flex-grow: 1; padding: 14px; font-size: 0.95rem; background-color: var(--success);">
+        <button id="updatePreviewBtn" type="button" class="primary-btn"
+          style="flex-grow: 1; padding: 14px; font-size: 0.95rem; background-color: var(--success);">
           <i class="fas fa-sync-alt"></i> Update & View Resume Preview
         </button>
         <button type="button" onclick="location.href='output.html'" class="ghost-btn" style="padding: 14px;">
@@ -281,12 +316,15 @@
       <div class="tabs">
         <button type="button" class="tab active" data-tab="preview">Preview</button>
         <button type="button" class="tab" data-tab="latex">LaTeX Code</button>
-        <button type="button" class="tab" data-tab="analysis" style="background: var(--secondary-hover); border-bottom: 2px solid var(--primary);">Tuning Panel Active</button>
+        <button type="button" class="tab" data-tab="analysis"
+          style="background: var(--secondary-hover); border-bottom: 2px solid var(--primary);">Tuning Panel
+          Active</button>
       </div>
 
       <div class="right-drawer-body">
         <section id="previewTab" class="tab-content active">
-          <div id="resumePreview" class="resume-preview empty-state">Generated resume preview will appear here. Enter details and generate to start.</div>
+          <div id="resumePreview" class="resume-preview empty-state">Generated resume preview will appear here. Enter
+            details and generate to start.</div>
         </section>
         <section id="latexTab" class="tab-content">
           <pre id="latexOutput" class="code-block">LaTeX output will appear here.</pre>
@@ -318,20 +356,42 @@
       <form id="authForm">
         <div class="status error" id="authError" style="display: none;"></div>
         <div class="status success" id="authSuccess" style="display: none;"></div>
-        
+
         <label>Username
-          <input id="authUsername" type="text" placeholder="Enter username" required minlength="3" autocomplete="username" />
+          <input id="authUsername" type="text" placeholder="Enter username" required minlength="3"
+            autocomplete="username" />
         </label>
         <label>Password
-          <input id="authPassword" type="password" placeholder="Enter password" required minlength="5" autocomplete="current-password" />
+          <input id="authPassword" type="password" placeholder="Enter password" required minlength="5"
+            autocomplete="current-password" />
         </label>
-        
+
         <div class="button-row compact" style="margin-top: 18px;">
           <button id="authSubmitBtn" type="submit" class="primary-btn" style="width: 100%;">Sign In</button>
         </div>
         <p class="modal-switch-text">
           Don't have an account? <a href="#" id="toggleAuthMode">Create one now</a>
         </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tuning Edit Modal -->
+  <div id="tuningModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 id="tuningModalTitle">Edit Item</h2>
+        <button id="closeTuningModal" type="button" class="close-btn" onclick="closeTuningModal()">&times;</button>
+      </div>
+      <form id="tuningModalForm" onsubmit="saveTuningItem(event)">
+        <input type="hidden" id="tuningItemType" />
+        <input type="hidden" id="tuningItemIndex" />
+        <div id="tuningModalFields" style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px;">
+          <!-- Dynamic Form Fields will be inserted here -->
+        </div>
+        <div class="button-row compact" style="margin-top: 24px;">
+          <button type="submit" class="primary-btn" style="width: 100%; padding: 12px;">Save Changes</button>
+        </div>
       </form>
     </div>
   </div>
@@ -366,7 +426,7 @@
               const data = JSON.parse(savedJson);
               if (!data.input) data.input = {};
               if (!data.resume) data.resume = {};
-              
+
               // 2. Read latest skills from DOM textareas
               data.input.skills = {
                 languages: document.getElementById("skillsLanguages") ? document.getElementById("skillsLanguages").value : "",
@@ -375,55 +435,55 @@
                 tools: document.getElementById("skillsTools") ? document.getElementById("skillsTools").value : "",
                 core: document.getElementById("skillsCore") ? document.getElementById("skillsCore").value : ""
               };
-              
+
               // Update draft data in localStorage too
               localStorage.setItem("draftResumeData", JSON.stringify(data.input));
-              
+
               // 3. Recompute keyword matching metrics & ATS score based on manual selections
               const allSkills = Object.values(data.input.skills || {}).join(", ");
               const jdKeywords = data.resume.jdKeywords || [];
-              
+
               // Safe access for selected projects and certificates
               const selectedProjects = data.resume.selectedProjects || [];
               const selectedCertificates = data.resume.selectedCertificates || [];
-              
+
               // Re-run ATS scoring
               data.resume.atsScore = estimateDetailedAtsScore(
-                data.input, 
-                selectedProjects, 
-                selectedCertificates, 
+                data.input,
+                selectedProjects,
+                selectedCertificates,
                 jdKeywords
               );
-              
+
               // Re-run keyword match analysis
               const matchedSet = new Set();
               const missingSet = new Set(jdKeywords);
-              
+
               // Check matches in skills, projects, certificates, experience
               const projectsText = selectedProjects.map(p => {
                 const techText = Array.isArray(p.technologies) ? p.technologies.join(" ") : String(p.technologies || "");
                 const bulletsText = Array.isArray(p.bullets) ? p.bullets.join(" ") : String(p.bullets || "");
                 return (p.title || "") + " " + techText + " " + bulletsText;
               }).join(" ");
-              
+
               const certsText = selectedCertificates.map(c => (c.title || "") + " " + (c.reason || c.issuer || "")).join(" ");
               const expText = (data.input.experience || []).map(e => (e.role || "") + " " + (e.bullets || "")).join(" ");
-              
+
               const textContent = (allSkills + " " + projectsText + " " + certsText + " " + expText).toLowerCase();
-              
+
               jdKeywords.forEach(kw => {
                 if (textContent.includes(kw.toLowerCase())) {
                   matchedSet.add(kw);
                   missingSet.delete(kw);
                 }
               });
-              
+
               data.resume.matchedKeywords = [...matchedSet];
               data.resume.missingKeywords = [...missingSet];
 
               // 4. Rebuild LaTeX document with new skills and manual selections
               const updatedLatex = buildLatexResume(data.input, data.resume);
-              
+
               // 5. Save back to localStorage
               localStorage.setItem("latestResumeResultData", JSON.stringify(data));
               localStorage.setItem("latestResumeLatex", updatedLatex);
@@ -431,7 +491,7 @@
               console.error("Failed to compile update on click:", err);
             }
           }
-          
+
           showStatus("Applying updates to resume...", false, true);
           setTimeout(() => {
             window.location.href = "output.html";
@@ -457,7 +517,7 @@
         // Render projects tuning list
         const projectsList = document.getElementById("projectsTuningList");
         projectsList.innerHTML = "";
-        
+
         // Find which project titles are currently selected
         const selectedProjectTitles = new Set(resume.selectedProjects.map(p => String(p.title || "").toLowerCase()));
 
@@ -465,7 +525,7 @@
           const isSelected = selectedProjectTitles.has(String(proj.title || "").toLowerCase());
           const item = document.createElement("div");
           item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
-          
+
           item.innerHTML = `
             <div class="tuning-item-details">
               <div class="tuning-item-title">${escapeHtml(proj.title)}</div>
@@ -474,11 +534,13 @@
                 ${isSelected ? "Included" : "Excluded"}
               </span>
             </div>
-            <div>
-              ${isSelected ? 
-                `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger"><i class="fas fa-minus"></i> Remove</button>` :
-                `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn"><i class="fas fa-plus"></i> Include</button>`
-              }
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${isSelected ?
+              `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger" style="padding: 6px 10px;"><i class="fas fa-minus"></i> Remove</button>` :
+              `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn" style="padding: 6px 10px;"><i class="fas fa-plus"></i> Include</button>`
+            }
+              <button type="button" onclick="openEditProjectModal(${idx})" class="secondary-btn small-btn" style="padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border);"><i class="fas fa-edit"></i> Edit</button>
+              <button type="button" onclick="deleteProject(${idx})" class="ghost-btn small-btn danger" style="padding: 6px 10px; border-radius: 4px;"><i class="fas fa-trash-alt"></i></button>
             </div>
           `;
           projectsList.appendChild(item);
@@ -494,7 +556,7 @@
           const isSelected = selectedCertTitles.has(String(cert.title || "").toLowerCase());
           const item = document.createElement("div");
           item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
-          
+
           item.innerHTML = `
             <div class="tuning-item-details">
               <div class="tuning-item-title">${escapeHtml(cert.title)}</div>
@@ -503,11 +565,13 @@
                 ${isSelected ? "Included" : "Excluded"}
               </span>
             </div>
-            <div>
-              ${isSelected ? 
-                `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger"><i class="fas fa-minus"></i> Remove</button>` :
-                `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn"><i class="fas fa-plus"></i> Include</button>`
-              }
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${isSelected ?
+              `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger" style="padding: 6px 10px;"><i class="fas fa-minus"></i> Remove</button>` :
+              `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn" style="padding: 6px 10px;"><i class="fas fa-plus"></i> Include</button>`
+            }
+              <button type="button" onclick="openEditCertModal(${idx})" class="secondary-btn small-btn" style="padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border);"><i class="fas fa-edit"></i> Edit</button>
+              <button type="button" onclick="deleteCert(${idx})" class="ghost-btn small-btn danger" style="padding: 6px 10px; border-radius: 4px;"><i class="fas fa-trash-alt"></i></button>
             </div>
           `;
           certsList.appendChild(item);
@@ -516,7 +580,7 @@
         // Render missing keywords
         const keywordsContainer = document.getElementById("missingKeywordsContainer");
         keywordsContainer.innerHTML = "";
-        
+
         const missing = resume.missingKeywords || [];
         if (missing.length === 0) {
           keywordsContainer.innerHTML = "<p class='note'>No missing keywords detected!</p>";
@@ -535,6 +599,308 @@
 
       } catch (err) {
         console.error("Failed to render tuning panel:", err);
+      }
+    }
+
+    // Modal Add/Edit/Delete Helper Functions
+    function openAddProjectModal() {
+      document.getElementById("tuningModalTitle").textContent = "Add Project";
+      document.getElementById("tuningItemType").value = "project";
+      document.getElementById("tuningItemIndex").value = "-1";
+
+      const fields = document.getElementById("tuningModalFields");
+      fields.innerHTML = `
+        <label>Project Title
+          <input type="text" id="projTitle" placeholder="e.g. HealthGuard AI" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Technologies Used (comma separated)
+          <input type="text" id="projTech" placeholder="e.g. Python, TensorFlow, PyTorch" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Description / Domain Context
+          <textarea id="projDesc" placeholder="e.g. Privacy-preserving disease detection system using Federated Edge Learning" required style="width: 100%; height: 60px; margin-top: 4px;"></textarea>
+        </label>
+        <label>Key Features (comma separated or separate lines)
+          <textarea id="projFeatures" placeholder="e.g. Synthetic image generation, CNN classification" style="width: 100%; height: 60px; margin-top: 4px;"></textarea>
+        </label>
+        <label>Measurable Outcomes & Metrics
+          <input type="text" id="projMetrics" placeholder="e.g. 15% diagnostic accuracy improvement, 90%+ accuracy" style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Project URL (optional)
+          <input type="text" id="projLink" placeholder="e.g. https://github.com/user/project" style="width: 100%; margin-top: 4px;" />
+        </label>
+      `;
+      document.getElementById("tuningModal").style.display = "flex";
+    }
+
+    function openEditProjectModal(index) {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+      const data = JSON.parse(savedJson);
+      const proj = data.input.projects[index];
+      if (!proj) return;
+
+      document.getElementById("tuningModalTitle").textContent = "Edit Project";
+      document.getElementById("tuningItemType").value = "project";
+      document.getElementById("tuningItemIndex").value = String(index);
+
+      const fields = document.getElementById("tuningModalFields");
+      fields.innerHTML = `
+        <label>Project Title
+          <input type="text" id="projTitle" value="${escapeHtml(proj.title || '')}" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Technologies Used (comma separated)
+          <input type="text" id="projTech" value="${escapeHtml(proj.technologies || '')}" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Description / Domain Context
+          <textarea id="projDesc" required style="width: 100%; height: 60px; margin-top: 4px;">${escapeHtml(proj.description || '')}</textarea>
+        </label>
+        <label>Key Features (comma separated or separate lines)
+          <textarea id="projFeatures" style="width: 100%; height: 60px; margin-top: 4px;">${escapeHtml(proj.features || '')}</textarea>
+        </label>
+        <label>Measurable Outcomes & Metrics
+          <input type="text" id="projMetrics" value="${escapeHtml(proj.metrics || '')}" style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Project URL (optional)
+          <input type="text" id="projLink" value="${escapeHtml(proj.link || '')}" style="width: 100%; margin-top: 4px;" />
+        </label>
+      `;
+      document.getElementById("tuningModal").style.display = "flex";
+    }
+
+    function openAddCertModal() {
+      document.getElementById("tuningModalTitle").textContent = "Add Certificate";
+      document.getElementById("tuningItemType").value = "certificate";
+      document.getElementById("tuningItemIndex").value = "-1";
+
+      const fields = document.getElementById("tuningModalFields");
+      fields.innerHTML = `
+        <label>Certificate Name / Title
+          <input type="text" id="certTitle" placeholder="e.g. Deep Learning Specialization" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Issuing Organization
+          <input type="text" id="certIssuer" placeholder="e.g. Coursera / DeepLearning.AI" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Date Received
+          <input type="text" id="certDate" placeholder="e.g. June 2024" style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Relevant Skills (comma separated)
+          <input type="text" id="certSkills" placeholder="e.g. Neural Networks, PyTorch" style="width: 100%; margin-top: 4px;" />
+        </label>
+      `;
+      document.getElementById("tuningModal").style.display = "flex";
+    }
+
+    function openEditCertModal(index) {
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+      const data = JSON.parse(savedJson);
+      const cert = data.input.certificates[index];
+      if (!cert) return;
+
+      document.getElementById("tuningModalTitle").textContent = "Edit Certificate";
+      document.getElementById("tuningItemType").value = "certificate";
+      document.getElementById("tuningItemIndex").value = String(index);
+
+      const fields = document.getElementById("tuningModalFields");
+      fields.innerHTML = `
+        <label>Certificate Name / Title
+          <input type="text" id="certTitle" value="${escapeHtml(cert.title || '')}" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Issuing Organization
+          <input type="text" id="certIssuer" value="${escapeHtml(cert.issuer || '')}" required style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Date Received
+          <input type="text" id="certDate" value="${escapeHtml(cert.date || '')}" style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Relevant Skills (comma separated)
+          <input type="text" id="certSkills" value="${escapeHtml(cert.skills || '')}" style="width: 100%; margin-top: 4px;" />
+        </label>
+      `;
+      document.getElementById("tuningModal").style.display = "flex";
+    }
+
+    function closeTuningModal() {
+      document.getElementById("tuningModal").style.display = "none";
+    }
+
+    function saveTuningItem(event) {
+      event.preventDefault();
+
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+
+      try {
+        const data = JSON.parse(savedJson);
+        const itemType = document.getElementById("tuningItemType").value;
+        const index = parseInt(document.getElementById("tuningItemIndex").value, 10);
+
+        if (itemType === "project") {
+          const projectItem = {
+            title: document.getElementById("projTitle").value,
+            technologies: document.getElementById("projTech").value,
+            description: document.getElementById("projDesc").value,
+            features: document.getElementById("projFeatures").value,
+            metrics: document.getElementById("projMetrics").value,
+            link: document.getElementById("projLink").value
+          };
+
+          if (index === -1) {
+            // Add new project
+            if (!data.input.projects) data.input.projects = [];
+            data.input.projects.push(projectItem);
+          } else {
+            // Update existing project
+            data.input.projects[index] = projectItem;
+          }
+        } else if (itemType === "certificate") {
+          const certItem = {
+            title: document.getElementById("certTitle").value,
+            issuer: document.getElementById("certIssuer").value,
+            date: document.getElementById("certDate").value,
+            skills: document.getElementById("certSkills").value
+          };
+
+          if (index === -1) {
+            // Add new certificate
+            if (!data.input.certificates) data.input.certificates = [];
+            data.input.certificates.push(certItem);
+          } else {
+            // Update existing certificate
+            data.input.certificates[index] = certItem;
+          }
+        }
+
+        // Save to draft memory
+        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
+
+        // Sync global draftData memory
+        draftData = data.input;
+
+        // Recompute selection state (generateLocalResume selects based on metrics)
+        const updatedResume = generateLocalResume(data.input);
+
+        // Retain selection arrays
+        const selectedProjTitles = new Set((data.resume.selectedProjects || []).map(p => String(p.title || "").toLowerCase()));
+        updatedResume.selectedProjects = updatedResume.selectedProjects.filter(p => selectedProjTitles.has(String(p.title || "").toLowerCase()));
+
+        const selectedCertTitles = new Set((data.resume.selectedCertificates || []).map(c => String(c.title || "").toLowerCase()));
+        updatedResume.selectedCertificates = updatedResume.selectedCertificates.filter(c => selectedCertTitles.has(String(c.title || "").toLowerCase()));
+
+        // Ensure limit/quota
+        const maxProjs = Math.min(data.input.projectCount || 3, updatedResume.selectedProjects.length);
+        updatedResume.selectedProjects = updatedResume.selectedProjects.slice(0, maxProjs);
+        const maxCerts = Math.min(data.input.certificateCount || 3, updatedResume.selectedCertificates.length);
+        updatedResume.selectedCertificates = updatedResume.selectedCertificates.slice(0, maxCerts);
+
+        // Recalculate score
+        updatedResume.atsScore = estimateDetailedAtsScore(
+          data.input,
+          updatedResume.selectedProjects,
+          updatedResume.selectedCertificates,
+          updatedResume.jdKeywords || []
+        );
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
+
+        // Re-render dashboard columns
+        renderResult(data.input, updatedResume);
+        renderTuningDashboard();
+        closeTuningModal();
+        showStatus("Dashboard items updated and re-analyzed.", false, true);
+
+      } catch (err) {
+        console.error("Failed to save tuning item edits:", err);
+      }
+    }
+
+    function deleteProject(index) {
+      if (!confirm("Are you sure you want to delete this project?")) return;
+
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+
+      try {
+        const data = JSON.parse(savedJson);
+        const projToDelete = data.input.projects[index];
+        if (!projToDelete) return;
+
+        // Remove from input projects
+        data.input.projects.splice(index, 1);
+
+        // Remove from selected projects
+        data.resume.selectedProjects = (data.resume.selectedProjects || []).filter(
+          p => String(p.title || "").toLowerCase() !== String(projToDelete.title || "").toLowerCase()
+        );
+
+        // Save to draft memory
+        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
+        draftData = data.input;
+
+        // Recompute
+        const updatedResume = generateLocalResume(data.input);
+        updatedResume.selectedProjects = data.resume.selectedProjects;
+        updatedResume.selectedCertificates = data.resume.selectedCertificates;
+        updatedResume.atsScore = estimateDetailedAtsScore(
+          data.input,
+          updatedResume.selectedProjects,
+          updatedResume.selectedCertificates,
+          updatedResume.jdKeywords || []
+        );
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
+
+        renderResult(data.input, updatedResume);
+        renderTuningDashboard();
+        showStatus("Project deleted.", false, true);
+      } catch (err) {
+        console.error("Failed to delete project:", err);
+      }
+    }
+
+    function deleteCert(index) {
+      if (!confirm("Are you sure you want to delete this certificate?")) return;
+
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+
+      try {
+        const data = JSON.parse(savedJson);
+        const certToDelete = data.input.certificates[index];
+        if (!certToDelete) return;
+
+        // Remove from input certificates
+        data.input.certificates.splice(index, 1);
+
+        // Remove from selected certificates
+        data.resume.selectedCertificates = (data.resume.selectedCertificates || []).filter(
+          c => String(c.title || "").toLowerCase() !== String(certToDelete.title || "").toLowerCase()
+        );
+
+        // Save to draft memory
+        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
+        draftData = data.input;
+
+        // Recompute
+        const updatedResume = generateLocalResume(data.input);
+        updatedResume.selectedProjects = data.resume.selectedProjects;
+        updatedResume.selectedCertificates = data.resume.selectedCertificates;
+        updatedResume.atsScore = estimateDetailedAtsScore(
+          data.input,
+          updatedResume.selectedProjects,
+          updatedResume.selectedCertificates,
+          updatedResume.jdKeywords || []
+        );
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
+
+        renderResult(data.input, updatedResume);
+        renderTuningDashboard();
+        showStatus("Certificate deleted.", false, true);
+      } catch (err) {
+        console.error("Failed to delete certificate:", err);
       }
     }
 
@@ -559,7 +925,7 @@
             // Generate bullets
             const matchVerbs = new Map();
             const jdKeywords = data.resume.jdKeywords || [];
-            
+
             const localProj = {
               title: projectToAdd.title,
               technologies: splitList(projectToAdd.technologies),
@@ -575,12 +941,12 @@
 
         // Save back
         data.resume.selectedProjects = selectedProjects;
-        
+
         // Re-score
         const updatedResume = generateLocalResume(input);
         updatedResume.selectedProjects = selectedProjects; // Preserve selection choice
         updatedResume.atsScore = estimateDetailedAtsScore(input, selectedProjects, data.resume.selectedCertificates, updatedResume.jdKeywords);
-        
+
         localStorage.setItem("latestResumeResultData", JSON.stringify({ input, resume: updatedResume }));
         localStorage.setItem("latestResumeLatex", buildLatexResume(input, updatedResume));
 
@@ -643,10 +1009,10 @@
 
     // Override the tag editor update so it triggers both updates
     const origUpdateTextarea = updateTextareaFromEditor;
-    updateTextareaFromEditor = function(editor) {
+    updateTextareaFromEditor = function (editor) {
       origUpdateTextarea(editor);
-      renderTuningDashboard(); // Refresh our dashboard too
     };
-  </style>
+  </script>
 </body>
+
 </html>
