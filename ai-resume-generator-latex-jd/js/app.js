@@ -232,7 +232,8 @@ function init() {
   setupInteractiveSkillsEditor();
 
   // Auto fast-forward to step 3 on index.html if name & email are pre-filled
-  if (currentStep === 1 && draftData.name && draftData.email) {
+  const isIndexPage = path.includes("index.html") || path.endsWith("/") || path === "";
+  if (currentStep === 1 && isIndexPage && draftData.name && draftData.email) {
     setTimeout(() => {
       window.location.href = "ai.html";
     }, 100);
