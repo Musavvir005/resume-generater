@@ -145,6 +145,7 @@ function generateLocalResume(data) {
       title: item.title,
       issuer: item.issuer,
       date: item.date,
+      link: item.link || "",
       reason: relevanceReason(item.skills || item.title, jdKeywords)
     }));
 

@@ -871,7 +871,8 @@ function addCertificate(data = {}) {
     { field: "title", label: "Certificate Title", placeholder: "Machine Learning Specialization", value: data.title },
     { field: "issuer", label: "Issuer", placeholder: "Coursera", value: data.issuer },
     { field: "date", label: "Date", placeholder: "2024", value: data.date },
-    { field: "skills", label: "Related Skills", placeholder: "Machine Learning, Python, model evaluation", value: data.skills }
+    { field: "skills", label: "Related Skills", placeholder: "Machine Learning, Python, model evaluation", value: data.skills },
+    { field: "link", label: "Credential Link (Optional)", placeholder: "e.g. Credly URL or verify link", value: data.link }
   ], "two");
 }
 

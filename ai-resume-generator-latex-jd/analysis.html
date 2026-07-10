@@ -842,6 +842,9 @@
         <label>Relevant Skills (comma separated)
           <input type="text" id="certSkills" placeholder="e.g. Neural Networks, PyTorch" style="width: 100%; margin-top: 4px;" />
         </label>
+        <label>Credential Link (Optional)
+          <input type="text" id="certLink" placeholder="e.g. Credly URL or verify link" style="width: 100%; margin-top: 4px;" />
+        </label>
       `;
       document.getElementById("tuningModal").style.display = "flex";
     }
@@ -870,6 +873,9 @@
         </label>
         <label>Relevant Skills (comma separated)
           <input type="text" id="certSkills" value="${escapeHtml(cert.skills || '')}" style="width: 100%; margin-top: 4px;" />
+        </label>
+        <label>Credential Link (Optional)
+          <input type="text" id="certLink" value="${escapeHtml(cert.link || '')}" style="width: 100%; margin-top: 4px;" />
         </label>
       `;
       document.getElementById("tuningModal").style.display = "flex";
@@ -913,7 +919,8 @@
             title: document.getElementById("certTitle").value,
             issuer: document.getElementById("certIssuer").value,
             date: document.getElementById("certDate").value,
-            skills: document.getElementById("certSkills").value
+            skills: document.getElementById("certSkills").value,
+            link: document.getElementById("certLink") ? document.getElementById("certLink").value : ""
           };
 
           if (index === -1) {
@@ -1135,6 +1142,7 @@
               title: certToAdd.title,
               issuer: certToAdd.issuer,
               date: certToAdd.date,
+              link: certToAdd.link || "",
               reason: relevanceReason(certToAdd.skills || certToAdd.title, data.resume.jdKeywords || [])
             });
           }
