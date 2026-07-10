@@ -37,6 +37,7 @@ let currentStep = 1;
 let token = localStorage.getItem("token") || null;
 let username = localStorage.getItem("username") || null;
 let isRegisterMode = false;
+let tagDragSrcEl = null;
 
 // Consolidated Multi-Page Draft Memory
 let draftData = {
@@ -1127,14 +1128,6 @@ function setupInteractiveSkillsEditor() {
     // Populate tags from textarea value
     renderTagsFromTextarea(editor, textarea.value);
     
-    // Make tags list sortable/draggable
-    const tagList = editor.querySelector(".tag-list");
-    if (tagList) {
-      makeListSortable(tagList, () => {
-        updateTextareaFromEditor(editor);
-      });
-    }
-    
     // Render helper missing skills in form
     renderMissingSkillsHelper(editor);
   });
@@ -1205,6 +1198,56 @@ function createTagElement(editor, tagText) {
     updateTextareaFromEditor(editor);
   });
   tagEl.appendChild(removeBtn);
+
+  // Drag and Drop reordering logic for skill tags
+  tagEl.addEventListener("dragstart", (e) => {
+    tagDragSrcEl = tagEl;
+    e.dataTransfer.effectAllowed = "move";
+    tagEl.classList.add("dragging");
+  });
+
+  tagEl.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    return false;
+  });
+
+  tagEl.addEventListener("dragenter", (e) => {
+    if (tagEl !== tagDragSrcEl) {
+      tagEl.classList.add("drag-over");
+    }
+  });
+
+  tagEl.addEventListener("dragleave", () => {
+    tagEl.classList.remove("drag-over");
+  });
+
+  tagEl.addEventListener("drop", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (tagEl !== tagDragSrcEl && tagDragSrcEl) {
+      const container = tagEl.parentNode;
+      const allTags = [...container.querySelectorAll(".tag-item")];
+      const srcIdx = allTags.indexOf(tagDragSrcEl);
+      const destIdx = allTags.indexOf(tagEl);
+      
+      if (srcIdx < destIdx) {
+        container.insertBefore(tagDragSrcEl, tagEl.nextSibling);
+      } else {
+        container.insertBefore(tagDragSrcEl, tagEl);
+      }
+      
+      updateTextareaFromEditor(editor);
+    }
+  });
+
+  tagEl.addEventListener("dragend", () => {
+    document.querySelectorAll(".tag-item").forEach(item => {
+      item.classList.remove("dragging");
+      item.classList.remove("drag-over");
+    });
+    tagDragSrcEl = null;
+  });
 
   return tagEl;
 }
@@ -1424,45 +1467,5 @@ function triggerAutoRecompute() {
   // Re-render
   renderResult(draftData, resume);
   showStatus("Skill added and resume analysis recalculated!", false, true);
-}
-
-function makeListSortable(container, onReorder) {
-  if (!container) return;
-
-  let dragEl = null;
-
-  container.addEventListener("dragstart", (e) => {
-    const item = e.target.closest(".tuning-item") || e.target.closest(".tag-item");
-    if (!item) return;
-    dragEl = item;
-    item.classList.add("dragging");
-    e.dataTransfer.effectAllowed = "move";
-  });
-
-  container.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const target = e.target.closest(".tuning-item") || e.target.closest(".tag-item");
-    if (target && target !== dragEl && target.parentNode === container) {
-      const bounding = target.getBoundingClientRect();
-      const offset = e.clientY - bounding.top - bounding.height / 2;
-      if (offset > 0) {
-        container.insertBefore(dragEl, target.nextSibling);
-      } else {
-        container.insertBefore(dragEl, target);
-      }
-    }
-  });
-
-  container.addEventListener("dragend", (e) => {
-    const item = e.target.closest(".tuning-item") || e.target.closest(".tag-item");
-    if (item) {
-      item.classList.remove("dragging");
-    }
-    dragEl = null;
-    if (onReorder) {
-      onReorder();
-    }
-  });
 }
 

@@ -132,6 +132,23 @@
       padding: 16px;
       margin-bottom: 24px;
     }
+
+    /* Drag & Drop Visuals */
+    .tuning-item.dragging {
+      opacity: 0.4;
+      border: 1px dashed var(--primary) !important;
+    }
+    .tuning-item.drag-over {
+      border-top: 2px solid var(--primary) !important;
+      background: rgba(16, 185, 129, 0.03) !important;
+    }
+    .tag-item.dragging {
+      opacity: 0.4;
+    }
+    .tag-item.drag-over {
+      border-left: 2px solid var(--primary) !important;
+      padding-left: 4px;
+    }
   </style>
 </head>
 
@@ -500,6 +517,115 @@
       }
     });
 
+    let dragSrcEl = null;
+    let dragSrcType = null; // "project" or "certificate"
+    let dragSrcIndex = -1;
+
+    function handleDragStart(e) {
+      dragSrcEl = this;
+      dragSrcType = this.getAttribute("data-type");
+      dragSrcIndex = parseInt(this.getAttribute("data-index"), 10);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', this.innerHTML);
+      this.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDragEnter(e) {
+      const type = this.getAttribute("data-type");
+      if (type === dragSrcType && this !== dragSrcEl) {
+        this.classList.add('drag-over');
+      }
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      const type = this.getAttribute("data-type");
+      const targetIndex = parseInt(this.getAttribute("data-index"), 10);
+      
+      if (type !== dragSrcType || dragSrcIndex === targetIndex || dragSrcIndex === -1 || targetIndex === -1) {
+        return;
+      }
+      
+      const savedJson = localStorage.getItem("latestResumeResultData");
+      if (!savedJson) return;
+      
+      try {
+        const data = JSON.parse(savedJson);
+        
+        if (type === "project") {
+          const list = data.input.projects;
+          const [draggedItem] = list.splice(dragSrcIndex, 1);
+          list.splice(targetIndex, 0, draggedItem);
+          
+          const selectedTitlesOrder = new Map(list.map((p, idx) => [String(p.title || "").toLowerCase(), idx]));
+          data.resume.selectedProjects.sort((a, b) => {
+            const idxA = selectedTitlesOrder.has(String(a.title || "").toLowerCase()) ? selectedTitlesOrder.get(String(a.title || "").toLowerCase()) : 999;
+            const idxB = selectedTitlesOrder.has(String(b.title || "").toLowerCase()) ? selectedTitlesOrder.get(String(b.title || "").toLowerCase()) : 999;
+            return idxA - idxB;
+          });
+          
+        } else if (type === "certificate") {
+          const list = data.input.certificates;
+          const [draggedItem] = list.splice(dragSrcIndex, 1);
+          list.splice(targetIndex, 0, draggedItem);
+          
+          const selectedTitlesOrder = new Map(list.map((c, idx) => [String(c.title || "").toLowerCase(), idx]));
+          data.resume.selectedCertificates.sort((a, b) => {
+            const idxA = selectedTitlesOrder.has(String(a.title || "").toLowerCase()) ? selectedTitlesOrder.get(String(a.title || "").toLowerCase()) : 999;
+            const idxB = selectedTitlesOrder.has(String(b.title || "").toLowerCase()) ? selectedTitlesOrder.get(String(b.title || "").toLowerCase()) : 999;
+            return idxA - idxB;
+          });
+        }
+        
+        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
+        draftData = data.input;
+
+        const updatedResume = generateLocalResume(data.input);
+        updatedResume.selectedProjects = data.resume.selectedProjects;
+        updatedResume.selectedCertificates = data.resume.selectedCertificates;
+        updatedResume.atsScore = estimateDetailedAtsScore(
+          data.input, 
+          updatedResume.selectedProjects, 
+          updatedResume.selectedCertificates, 
+          updatedResume.jdKeywords || []
+        );
+
+        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
+        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
+        
+        renderResult(data.input, updatedResume);
+        renderTuningDashboard();
+        showStatus("Order updated successfully.", false, true);
+        
+      } catch (err) {
+        console.error("Failed to reorder items on drop:", err);
+      }
+    }
+
+    function handleDragEnd(e) {
+      document.querySelectorAll('.tuning-item').forEach(item => {
+        item.classList.remove('dragging');
+        item.classList.remove('drag-over');
+      });
+      dragSrcEl = null;
+      dragSrcIndex = -1;
+      dragSrcType = null;
+    }
+
     function renderTuningDashboard() {
       // Retrieve latest details
       const savedJson = localStorage.getItem("latestResumeResultData");
@@ -525,18 +651,19 @@
           const isSelected = selectedProjectTitles.has(String(proj.title || "").toLowerCase());
           const item = document.createElement("div");
           item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
-          item.setAttribute("draggable", "true");
-          item.setAttribute("data-index", idx);
+          item.style.display = "flex";
+          item.style.alignItems = "center";
 
           item.innerHTML = `
-            <div class="tuning-item-details">
+            <i class="fas fa-grip-vertical drag-handle" style="cursor: grab; margin-right: 12px; color: var(--text-muted); display: flex; align-items: center;"></i>
+            <div class="tuning-item-details" style="flex-grow: 1;">
               <div class="tuning-item-title">${escapeHtml(proj.title)}</div>
               <div class="tuning-item-meta">${escapeHtml(proj.technologies)}</div>
               <span class="tuning-item-badge ${isSelected ? "selected-badge" : "unselected-badge"}">
                 ${isSelected ? "Included" : "Excluded"}
               </span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
               ${isSelected ?
               `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger" style="padding: 6px 10px;"><i class="fas fa-minus"></i> Remove</button>` :
               `<button type="button" onclick="toggleProjectSelection('${escapeHtml(proj.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn" style="padding: 6px 10px;"><i class="fas fa-plus"></i> Include</button>`
@@ -545,6 +672,18 @@
               <button type="button" onclick="deleteProject(${idx})" class="ghost-btn small-btn danger" style="padding: 6px 10px; border-radius: 4px;"><i class="fas fa-trash-alt"></i></button>
             </div>
           `;
+          
+          // Attach drag events
+          item.setAttribute("draggable", "true");
+          item.setAttribute("data-type", "project");
+          item.setAttribute("data-index", String(idx));
+          item.addEventListener('dragstart', handleDragStart);
+          item.addEventListener('dragenter', handleDragEnter);
+          item.addEventListener('dragover', handleDragOver);
+          item.addEventListener('dragleave', handleDragLeave);
+          item.addEventListener('drop', handleDrop);
+          item.addEventListener('dragend', handleDragEnd);
+
           projectsList.appendChild(item);
         });
 
@@ -558,18 +697,19 @@
           const isSelected = selectedCertTitles.has(String(cert.title || "").toLowerCase());
           const item = document.createElement("div");
           item.className = `tuning-item ${isSelected ? "selected" : "unselected"}`;
-          item.setAttribute("draggable", "true");
-          item.setAttribute("data-index", idx);
+          item.style.display = "flex";
+          item.style.alignItems = "center";
 
           item.innerHTML = `
-            <div class="tuning-item-details">
+            <i class="fas fa-grip-vertical drag-handle" style="cursor: grab; margin-right: 12px; color: var(--text-muted); display: flex; align-items: center;"></i>
+            <div class="tuning-item-details" style="flex-grow: 1;">
               <div class="tuning-item-title">${escapeHtml(cert.title)}</div>
               <div class="tuning-item-meta">${escapeHtml(cert.issuer || "")}</div>
               <span class="tuning-item-badge ${isSelected ? "selected-badge" : "unselected-badge"}">
                 ${isSelected ? "Included" : "Excluded"}
               </span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
               ${isSelected ?
               `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', false)" class="ghost-btn small-btn danger" style="padding: 6px 10px;"><i class="fas fa-minus"></i> Remove</button>` :
               `<button type="button" onclick="toggleCertSelection('${escapeHtml(cert.title).replace(/'/g, "\\'")}', true)" class="primary-btn small-btn" style="padding: 6px 10px;"><i class="fas fa-plus"></i> Include</button>`
@@ -578,6 +718,18 @@
               <button type="button" onclick="deleteCert(${idx})" class="ghost-btn small-btn danger" style="padding: 6px 10px; border-radius: 4px;"><i class="fas fa-trash-alt"></i></button>
             </div>
           `;
+
+          // Attach drag events
+          item.setAttribute("draggable", "true");
+          item.setAttribute("data-type", "certificate");
+          item.setAttribute("data-index", String(idx));
+          item.addEventListener('dragstart', handleDragStart);
+          item.addEventListener('dragenter', handleDragEnter);
+          item.addEventListener('dragover', handleDragOver);
+          item.addEventListener('dragleave', handleDragLeave);
+          item.addEventListener('drop', handleDrop);
+          item.addEventListener('dragend', handleDragEnd);
+
           certsList.appendChild(item);
         });
 
@@ -601,130 +753,7 @@
           });
         }
 
-        // Activate drag & drop reordering
-        makeListSortable(projectsList, handleProjectReorder);
-        makeListSortable(certsList, handleCertReorder);
-
       } catch (err) {
-        console.error("Failed to render tuning panel:", err);
-      }
-    }
-
-    function handleProjectReorder() {
-      const savedJson = localStorage.getItem("latestResumeResultData");
-      if (!savedJson) return;
-      
-      try {
-        const data = JSON.parse(savedJson);
-        const projectsList = document.getElementById("projectsTuningList");
-        const items = [...projectsList.querySelectorAll(".tuning-item")];
-        
-        // Re-map projects based on new DOM order
-        const reorderedProjects = items.map(item => {
-          const origIdx = parseInt(item.getAttribute("data-index"), 10);
-          return data.input.projects[origIdx];
-        });
-        
-        data.input.projects = reorderedProjects;
-        
-        // Save
-        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
-        draftData = data.input;
-        
-        // Also reorder selection array to match new input order if they are selected
-        const selectedProjTitles = new Set((data.resume.selectedProjects || []).map(p => String(p.title || "").toLowerCase()));
-        
-        // Regenerate resume with new project order
-        const updatedResume = generateLocalResume(data.input);
-        updatedResume.selectedProjects = updatedResume.selectedProjects.filter(p => selectedProjTitles.has(String(p.title || "").toLowerCase()));
-        
-        // Restore certificates selection
-        updatedResume.selectedCertificates = data.resume.selectedCertificates;
-        
-        // Ensure max/quota
-        const maxProjs = Math.min(data.input.projectCount || 3, updatedResume.selectedProjects.length);
-        updatedResume.selectedProjects = updatedResume.selectedProjects.slice(0, maxProjs);
-        
-        // Recalculate score
-        updatedResume.atsScore = estimateDetailedAtsScore(
-          data.input, 
-          updatedResume.selectedProjects, 
-          updatedResume.selectedCertificates, 
-          updatedResume.jdKeywords || []
-        );
-
-        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
-        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
-        
-        // Re-render preview
-        renderResult(data.input, updatedResume);
-        
-        // Refresh dashboard (so index attributes are reset to match new array order)
-        renderTuningDashboard();
-        showStatus("Project order updated.", false, true);
-        
-      } catch (err) {
-        console.error("Failed to reorder projects:", err);
-      }
-    }
-
-    function handleCertReorder() {
-      const savedJson = localStorage.getItem("latestResumeResultData");
-      if (!savedJson) return;
-      
-      try {
-        const data = JSON.parse(savedJson);
-        const certsList = document.getElementById("certificatesTuningList");
-        const items = [...certsList.querySelectorAll(".tuning-item")];
-        
-        // Re-map certificates based on new DOM order
-        const reorderedCerts = items.map(item => {
-          const origIdx = parseInt(item.getAttribute("data-index"), 10);
-          return data.input.certificates[origIdx];
-        });
-        
-        data.input.certificates = reorderedCerts;
-        
-        // Save
-        localStorage.setItem("draftResumeData", JSON.stringify(data.input));
-        draftData = data.input;
-        
-        // Also reorder selection array
-        const selectedCertTitles = new Set((data.resume.selectedCertificates || []).map(c => String(c.title || "").toLowerCase()));
-        
-        // Regenerate resume with new certificate order
-        const updatedResume = generateLocalResume(data.input);
-        updatedResume.selectedCertificates = updatedResume.selectedCertificates.filter(c => selectedCertTitles.has(String(c.title || "").toLowerCase()));
-        
-        // Restore projects selection
-        updatedResume.selectedProjects = data.resume.selectedProjects;
-        
-        // Ensure max/quota
-        const maxCerts = Math.min(data.input.certificateCount || 3, updatedResume.selectedCertificates.length);
-        updatedResume.selectedCertificates = updatedResume.selectedCertificates.slice(0, maxCerts);
-        
-        // Recalculate score
-        updatedResume.atsScore = estimateDetailedAtsScore(
-          data.input, 
-          updatedResume.selectedProjects, 
-          updatedResume.selectedCertificates, 
-          updatedResume.jdKeywords || []
-        );
-
-        localStorage.setItem("latestResumeResultData", JSON.stringify({ input: data.input, resume: updatedResume }));
-        localStorage.setItem("latestResumeLatex", buildLatexResume(data.input, updatedResume));
-        
-        // Re-render preview
-        renderResult(data.input, updatedResume);
-        
-        // Refresh dashboard
-        renderTuningDashboard();
-        showStatus("Certificate order updated.", false, true);
-        
-      } catch (err) {
-        console.error("Failed to reorder certificates:", err);
-      }
-    }
         console.error("Failed to render tuning panel:", err);
       }
     }
