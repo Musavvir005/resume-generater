@@ -1093,7 +1093,7 @@
               title: projectToAdd.title,
               technologies: splitList(projectToAdd.technologies),
               link: projectToAdd.link || "",
-              bullets: generateProjectBullets(projectToAdd, jdKeywords, matchVerbs)
+              bullets: generateProjectBullets(projectToAdd, jdKeywords, matchVerbs, selectedProjects.length)
             };
             selectedProjects.push(localProj);
           }

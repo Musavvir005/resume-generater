@@ -139,11 +139,11 @@ function generateLocalResume(data) {
   const usedVerbsMap = new Map();
   const selectedProjects = rankItems(data.projects, jdKeywords, projectText)
     .slice(0, Math.min(data.projectCount, data.projects.length))
-    .map(({ item }) => ({
+    .map(({ item }, index) => ({
       title: item.title,
       technologies: splitList(item.technologies),
       link: item.link || "",
-      bullets: generateProjectBullets(item, jdKeywords, usedVerbsMap)
+      bullets: generateProjectBullets(item, jdKeywords, usedVerbsMap, index)
     }));
 
   const selectedCertificates = rankItems(data.certificates, jdKeywords, certificateText)
@@ -294,7 +294,7 @@ function getUniqueActionVerb(category, usedVerbsMap) {
   return pool[0];
 }
 
-function generateProjectBullets(project, jdKeywords, usedVerbsMap) {
+function generateProjectBullets(project, jdKeywords, usedVerbsMap, index = 0) {
   const tech = splitList(project.technologies).slice(0, 5).join(", ");
   const features = splitList(project.features).slice(0, 3).join(", ");
   const metrics = project.metrics ? String(project.metrics).trim() : "";
@@ -306,20 +306,48 @@ function generateProjectBullets(project, jdKeywords, usedVerbsMap) {
   const vDesign = getUniqueActionVerb("design", usedVerbsMap);
 
   const bullets = [];
-  bullets.push(`${vCreate} an advanced ${project.title || "solution"} using ${tech || "the required tech stack"} for high-performance ${project.description ? "feature integration" : "application workflows"}, resulting in full alignment with ${matched || "target job criteria"}.`);
-  if (features) {
-    bullets.push(`${vExecute} ${features} using ${tech} for reliable service execution, resulting in optimal data pipeline consistency.`);
+  const idx = Number(index) || 0;
+
+  // Bullet 1: Creation & Core tech
+  if (idx % 2 === 0) {
+    bullets.push(`${vCreate} a high-performance ${project.title || "solution"} utilizing ${tech || "core technology stacks"} to achieve alignment with ${matched || "target job criteria"} in ${project.description ? "modular production workflows" : "scalable environments"}.`);
+  } else {
+    bullets.push(`Engineered and deployed ${project.title || "application"} capabilities using ${tech || "required tools"} to support ${project.description || "critical service integration"} and match ${matched || "required guidelines"}.`);
   }
+
+  // Bullet 2: Features integration
+  if (features) {
+    if (idx % 2 === 0) {
+      bullets.push(`Integrated ${features} with ${tech || "development tools"}, delivering reliable service execution and pipeline consistency.`);
+    } else {
+      bullets.push(`${vExecute} extensible features for ${features} using ${tech}, ensuring high durability and low processing latency.`);
+    }
+  }
+
+  // Bullet 3: Metrics optimization
   if (metrics) {
-    bullets.push(`${vOptimize} production-style system features for ${project.title || "platform"} operations, resulting in measurable outcomes including ${metrics}.`);
+    if (idx % 2 === 0) {
+      bullets.push(`Optimized operational metrics for ${project.title || "system"} services to deliver a measurable boost of ${metrics}.`);
+    } else {
+      bullets.push(`${vOptimize} platform performance parameters using ${tech}, boosting processing metrics by ${metrics}.`);
+    }
   }
   
+  // Fallbacks
   if (bullets.length < 3 && project.description) {
-    bullets.push(`${vDesign} core operational interfaces using ${tech} for system capabilities, resulting in a robust, extensible project implementation.`);
+    if (idx % 2 === 0) {
+      bullets.push(`${vDesign} core operational interfaces using ${tech} for system capabilities, maintaining a robust, extensible project implementation.`);
+    } else {
+      bullets.push(`Devised clean architectural patterns using ${tech || "target libraries"}, ensuring robust platform scalability.`);
+    }
   }
   
   while (bullets.length < 3) {
-    bullets.push(`Applied ${tech || "technical tools"} to deploy system services, resulting in enhanced operational capability.`);
+    if (idx % 2 === 0) {
+      bullets.push(`Leveraged ${tech || "technical tools"} to build and deploy scalable operational services, improving application latency.`);
+    } else {
+      bullets.push(`Applied ${tech || "modern software standards"} to construct responsive web applications, increasing developer productivity.`);
+    }
   }
   return bullets.slice(0, 3);
 }
