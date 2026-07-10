@@ -80,23 +80,31 @@
 
       <!-- Live Preview Area Tabs -->
       <div class="tabs">
-        <button type="button" class="tab active" data-tab="preview">Preview</button>
+        <button type="button" class="tab active" data-tab="preview">Preview & Analysis</button>
         <button type="button" class="tab" data-tab="latex">LaTeX Code</button>
-        <button type="button" class="tab" data-tab="analysis">ATS Analysis</button>
+        <button type="button" class="tab" data-tab="analysis"><i class="fas fa-sliders-h"></i> Adjust Selections</button>
       </div>
 
       <div class="right-drawer-body">
         
-        <section id="previewTab" class="tab-content active">
-          <div id="resumePreview" class="resume-preview empty-state">Generated resume preview will appear here. Enter details and generate to start.</div>
+        <section id="previewTab" class="tab-content active" style="height: 100%;">
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; height: 100%;">
+            
+            <div style="display: flex; flex-direction: column; height: 100%;">
+              <h3 style="font-size: 0.82rem; font-weight: 750; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Resume Preview</h3>
+              <div id="resumePreview" class="resume-preview empty-state" style="flex-grow: 1; overflow-y: auto;">Generated resume preview will appear here. Enter details and generate to start.</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; height: 100%; background: var(--panel-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-y: auto; max-height: calc(100vh - 280px);">
+              <h3 style="font-size: 0.82rem; font-weight: 750; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); padding-bottom: 6px;">ATS Analysis & Keywords</h3>
+              <div id="analysisOutput" class="analysis-box">JD analysis details will appear here.</div>
+            </div>
+
+          </div>
         </section>
 
         <section id="latexTab" class="tab-content">
           <pre id="latexOutput" class="code-block">LaTeX output will appear here.</pre>
-        </section>
-
-        <section id="analysisTab" class="tab-content">
-          <div id="analysisOutput" class="analysis-box">JD analysis details will appear here.</div>
         </section>
 
       </div>
