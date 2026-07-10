@@ -188,7 +188,7 @@ function formatProjectsLatex(projects = []) {
   if (!items.length) return "";
   return `\\section{Projects}\n    \\resumeSubHeadingListStart\n    \n${items.map((project, index) => {
     const titleText = escapeLatex(project.title);
-    const titleHeader = project.link ? `\\href{${escapeLatexUrl(project.link)}}{\\raisebox{-0.1\\height}{\\small\\faLink}}\\ \\textbf{${titleText}}` : `\\textbf{${titleText}}`;
+    const titleHeader = project.link ? `\\href{${escapeLatexUrl(project.link)}}{\\raisebox{-0.1\\height}{\\small\\faLink}\\ \\underline{Link}}\\ \\textbf{${titleText}}` : `\\textbf{${titleText}}`;
     return `      \\resumeProjectHeading\n          {${titleHeader} $|$ \\emph{${escapeLatex(arrayToText(project.technologies))}}}{}\n          \\resumeItemListStart\n${formatBulletItems(project.bullets)}\n          \\resumeItemListEnd`;
   }).join("\n          \n")}\n          \n    \\resumeSubHeadingListEnd`;
 }
@@ -212,7 +212,7 @@ function formatCertificatesLatex(certificates = []) {
   if (!items.length) return "";
   return `\\section{Certifications}\n    \\resumeSubHeadingListStart\n${items.map(cert => {
     const titleText = escapeLatex(cert.title);
-    const titleHeader = cert.link ? `\\href{${escapeLatexUrl(cert.link)}}{\\raisebox{-0.1\\height}{\\small\\faLink}}\\ \\textbf{${titleText}}` : `\\textbf{${titleText}}`;
+    const titleHeader = cert.link ? `\\href{${escapeLatexUrl(cert.link)}}{\\raisebox{-0.1\\height}{\\small\\faLink}}\\ \\underline{Link}}\\ \\textbf{${titleText}}` : `\\textbf{${titleText}}`;
     return `        \\resumeProjectHeading\n            {${titleHeader} -- ${escapeLatex(cert.issuer || "")}}{${escapeLatex(cert.date || "")}}`;
   }).join("\n")}\n    \\resumeSubHeadingListEnd`;
 }
@@ -291,7 +291,7 @@ function buildHtmlPreview(data, resume) {
       <p><strong>${escapeHtml(item.title || "")}</strong></p>${htmlBullets([item.detail])}
     `).join(""))}
     ${htmlSection("Projects", cleanProjects.map(project => {
-      const icon = project.link ? `<a href="${escapeHtml(project.link)}" target="_blank" style="color: var(--primary); text-decoration: none; margin-right: 6px;"><i class="fa-solid fa-link" style="font-size: 0.85em;"></i></a>` : "";
+      const icon = project.link ? `<a href="${escapeHtml(project.link)}" target="_blank" style="color: var(--primary); text-decoration: none; margin-right: 8px;"><i class="fa-solid fa-link" style="font-size: 0.85em; margin-right: 4px;"></i>Link</a>` : "";
       const titleHtml = project.link ? `<a href="${escapeHtml(project.link)}" target="_blank" style="color: var(--primary); text-decoration: underline;">${escapeHtml(project.title || "")}</a>` : escapeHtml(project.title || "");
       return `
         <p class="project-title">${icon}<strong>${titleHtml}</strong> | <em>${escapeHtml(arrayToText(project.technologies))}</em></p>
@@ -300,7 +300,7 @@ function buildHtmlPreview(data, resume) {
     }).join(""))}
     ${htmlSection("Technical Skills", Object.entries(cleanSkills).filter(([, v]) => arrayToText(v)).map(([k, v]) => `<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(arrayToText(v))}</p>`).join(""))}
     ${htmlSection("Certifications", cleanCertificates.map(cert => {
-      const icon = cert.link ? `<a href="${escapeHtml(cert.link)}" target="_blank" style="color: var(--primary); text-decoration: none; margin-right: 6px;"><i class="fa-solid fa-link" style="font-size: 0.85em;"></i></a>` : "";
+      const icon = cert.link ? `<a href="${escapeHtml(cert.link)}" target="_blank" style="color: var(--primary); text-decoration: none; margin-right: 8px;"><i class="fa-solid fa-link" style="font-size: 0.85em; margin-right: 4px;"></i>Link</a>` : "";
       const titleHtml = cert.link ? `<a href="${escapeHtml(cert.link)}" target="_blank" style="color: var(--primary); text-decoration: underline;">${escapeHtml(cert.title || "")}</a>` : escapeHtml(cert.title || "");
       return `<div class="resume-row"><strong>${icon}${titleHtml} -- ${escapeHtml(cert.issuer || "")}</strong><strong>${escapeHtml(cert.date || "")}</strong></div>`;
     }).join(""))}
