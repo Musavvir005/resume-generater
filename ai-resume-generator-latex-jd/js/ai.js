@@ -7,6 +7,11 @@ const IMPORTANT_TERMS = [
 ];
 
 function buildResumePrompt(data) {
+  const isOnePage = Number(data.pageCount) === 1 || String(data.pageCount) === "1" || !data.pageCount;
+  const pageText = isOnePage ? "1 Page (Ultra-Compact). Keep all descriptions and bullets extremely brief and concise (maximum 3 bullet points per role/project), limit projects to fit, and optimize layout spacing to prevent page overflow." : "2 Pages (Standard). Provide detailed descriptions (maximum 4 bullet points per role/project) and distribute sections cleanly across 2 pages.";
+  const skillsLimit = data.skillsPerCategory || 6;
+  const achievementsLimit = data.achievementCount !== undefined ? data.achievementCount : 3;
+
   return `You are an expert ATS-friendly resume writer and job-description matcher.
 
 TASK:
@@ -16,12 +21,14 @@ STRICT RULES:
 1. Return only valid JSON. No markdown fences, no explanation outside JSON.
 2. Use only the student's provided details. Do not invent projects, certificates, companies, links, scores, or experience.
 3. Rewrite bullets truthfully using the given project descriptions, features, metrics, and the job description keywords. Apply the standard structure: [Action verb] + [specific task] + using [exact JD keyword or technology] + for [scope or purpose] + resulting in [measurable outcome].
-4. VERY IMPORTANT: Do NOT repeat the same action verb more than 2 times across the entire resume. Vary your action verbs dynamically using unique, high-quality synonyms (e.g. use Developed, Architected, Engineered, Pioneered, Formulated, Implemented, Deployed, Optimized, Quantized, Refined).
-5. Keep the same LaTeX resume style: Education, Experience, Patents & Publications, Projects, Technical Skills, Certifications, Achievements.
-6. Put most job-relevant projects first.
-7. Put most job-relevant certificates first.
-8. Optimize skill categories for the JD using only provided skills.
-9. ATS score should be estimated using a weighted model: Mandatory Hard Skills (40%), Contextual Evidence / measurable results in bullets (20%), Target Job Title match (15%), Education & Certifications (10%), Preferred Skills (5%), Soft Skills (5%), and ATS-readable Single-Column Layout (5%).
+4. VERY IMPORTANT: Do NOT repeat the same action verb or technical words unnecessarily across the entire resume. Vary your word choices dynamically using unique, high-quality, non-repetitive synonyms (e.g. use Developed, Architected, Engineered, Pioneered, Formulated, Implemented, Deployed, Optimized, Quantized, Refined). Avoid repeating identical tech stack terms or verb phrases in the same sentence or adjacent bullet points.
+5. PAGE BUDGET: Follow the target length rule: ${pageText}. Ensure descriptions are formatted so that the compiled LaTeX does not overflow the page budget.
+6. SKILLS LIMIT: Return at most ${skillsLimit} skill tags in each category of the "skills" object.
+7. ACHIEVEMENTS LIMIT: Return at most ${achievementsLimit} achievements in the "achievements" array.
+8. Put most job-relevant projects first.
+9. Put most job-relevant certificates first.
+10. Optimize skill categories for the JD using only provided skills.
+11. ATS score should be estimated using a weighted model: Mandatory Hard Skills (40%), Contextual Evidence / measurable results in bullets (20%), Target Job Title match (15%), Education & Certifications (10%), Preferred Skills (5%), Soft Skills (5%), and ATS-readable Single-Column Layout (5%).
 
 Return this exact JSON shape:
 {
@@ -502,6 +509,29 @@ function ensureCounts(aiResume, sourceData) {
     clean.selectedCertificates = [...clean.selectedCertificates, ...fillers];
   }
   clean.selectedCertificates = clean.selectedCertificates.slice(0, targetCerts);
+
+  // Enforce achievements limit
+  const targetAchCount = (sourceData.achievementCount !== undefined && sourceData.achievementCount !== null) ? sourceData.achievementCount : 3;
+  clean.achievements = clean.achievements.slice(0, targetAchCount);
+
+  // Enforce skills per category limit
+  const skillsLimit = (sourceData.skillsPerCategory !== undefined && sourceData.skillsPerCategory !== null) ? sourceData.skillsPerCategory : 6;
+  if (clean.skills) {
+    Object.keys(clean.skills).forEach(category => {
+      if (Array.isArray(clean.skills[category])) {
+        clean.skills[category] = clean.skills[category].slice(0, skillsLimit);
+      }
+    });
+  }
+
+  // Enforce experience bullets budget
+  const maxBullets = (sourceData.pageCount === 1) ? 3 : 4;
+  if (Array.isArray(clean.experience)) {
+    clean.experience = clean.experience.map(exp => ({
+      ...exp,
+      bullets: Array.isArray(exp.bullets) ? exp.bullets.slice(0, maxBullets) : []
+    }));
+  }
 
   clean.atsScore = Number(clean.atsScore) || local.atsScore;
   return clean;
