@@ -1138,6 +1138,21 @@ function setupInteractiveSkillsEditor() {
           handleAdd();
         }
       });
+      input.addEventListener("input", () => {
+        const val = input.value;
+        if (val.includes(",")) {
+          const parts = val.split(",");
+          const lastPart = parts.pop();
+          parts.forEach(part => {
+            const trimmed = part.trim();
+            if (trimmed) {
+              addTagToEditor(editor, trimmed);
+            }
+          });
+          input.value = lastPart;
+        }
+      });
+      input.addEventListener("blur", handleAdd);
     }
 
     // Populate tags from textarea value
