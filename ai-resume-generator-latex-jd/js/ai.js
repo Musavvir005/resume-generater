@@ -149,19 +149,28 @@ function generateLocalResume(data) {
       reason: relevanceReason(item.skills || item.title, jdKeywords)
     }));
 
-  const skills = optimizeSkills(data.skills, jdKeywords);
+  const skills = optimizeSkills(data.skills, jdKeywords, data.skillsPerCategory);
   const atsScore = estimateDetailedAtsScore(data, selectedProjects, selectedCertificates, jdKeywords);
+
+  const maxBullets = (data.pageCount === 1) ? 3 : 4;
+  const experience = (data.experience || []).map(exp => ({
+    ...exp,
+    bullets: splitLines(exp.bullets).slice(0, maxBullets)
+  }));
+
+  const targetAchLimit = (data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3;
+  const achievements = (data.achievements || []).slice(0, targetAchLimit);
 
   return {
     targetRole: data.jobTitle || "Target Role",
     professionalHeadline: data.jobTitle || "ATS-targeted candidate",
     education: data.education,
-    experience: data.experience.map(exp => ({ ...exp, bullets: splitLines(exp.bullets) })),
+    experience,
     patents: data.patents,
     selectedProjects,
     selectedCertificates,
     skills,
-    achievements: data.achievements,
+    achievements,
     jdKeywords,
     matchedKeywords,
     missingKeywords,
@@ -308,7 +317,7 @@ function generateProjectBullets(project, jdKeywords, usedVerbsMap) {
   return bullets.slice(0, 3);
 }
 
-function optimizeSkills(skillObj, jdKeywords) {
+function optimizeSkills(skillObj, jdKeywords, limit = 6) {
   const categories = {
     "Languages": splitList(skillObj.languages),
     "Frameworks & Libraries": splitList(skillObj.frameworks),
@@ -317,12 +326,14 @@ function optimizeSkills(skillObj, jdKeywords) {
     "Core Competencies": splitList(skillObj.core)
   };
 
+  const skillsLimit = (limit !== undefined && limit !== null) ? limit : 6;
+
   Object.keys(categories).forEach(category => {
     categories[category] = categories[category].sort((a, b) => {
       const aMatch = jdKeywords.some(keyword => textIncludes(a, keyword));
       const bMatch = jdKeywords.some(keyword => textIncludes(b, keyword));
       return Number(bMatch) - Number(aMatch) || a.localeCompare(b);
-    });
+    }).slice(0, skillsLimit);
   });
 
   return categories;

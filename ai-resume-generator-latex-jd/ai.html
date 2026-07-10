@@ -126,11 +126,23 @@
                 <label>Target Role / Job Title
                   <input id="jobTitle" placeholder="Example: AI/ML Intern" />
                 </label>
+                <label>Target Page Count
+                  <select id="pageCount" style="width: 100%; margin-top: 4px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); color: var(--text);">
+                    <option value="1">1 Page (Ultra-Compact)</option>
+                    <option value="2">2 Pages (Standard)</option>
+                  </select>
+                </label>
                 <label>Projects to include
                   <input id="projectCount" type="number" min="1" max="8" value="3" />
                 </label>
                 <label>Certificates to include
                   <input id="certificateCount" type="number" min="0" max="8" value="3" />
+                </label>
+                <label>Achievements to include
+                  <input id="achievementCount" type="number" min="0" max="8" value="3" />
+                </label>
+                <label>Skills per category
+                  <input id="skillsPerCategory" type="number" min="3" max="12" value="6" />
                 </label>
               </div>
             </div>
