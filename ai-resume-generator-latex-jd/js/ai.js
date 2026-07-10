@@ -7,8 +7,6 @@ const IMPORTANT_TERMS = [
 ];
 
 function buildResumePrompt(data) {
-  const isOnePage = Number(data.pageCount) === 1 || String(data.pageCount) === "1" || !data.pageCount;
-  const pageText = isOnePage ? "1 Page (Ultra-Compact). Keep all descriptions and bullets extremely brief and concise (maximum 3 bullet points per role/project), limit projects to fit, and optimize layout spacing to prevent page overflow." : "2 Pages (Standard). Provide detailed descriptions (maximum 4 bullet points per role/project) and distribute sections cleanly across 2 pages.";
   const skillsLimit = data.skillsPerCategory || 6;
   const achievementsLimit = data.achievementCount !== undefined ? data.achievementCount : 3;
 
@@ -22,12 +20,11 @@ STRICT RULES:
 2. Use only the student's provided details. Do not invent projects, certificates, companies, links, scores, or experience.
 3. Rewrite bullets truthfully using the given project descriptions, features, metrics, and the job description keywords. Apply the standard structure: [Action verb] + [specific task] + using [exact JD keyword or technology] + for [scope or purpose] + resulting in [measurable outcome].
 4. VERY IMPORTANT: Do NOT repeat the same action verb or technical words unnecessarily across the entire resume. Vary your word choices dynamically using unique, high-quality, non-repetitive synonyms (e.g. use Developed, Architected, Engineered, Pioneered, Formulated, Implemented, Deployed, Optimized, Quantized, Refined). Avoid repeating identical tech stack terms or verb phrases in the same sentence or adjacent bullet points.
-5. PAGE BUDGET: Follow the target length rule: ${pageText}. Ensure descriptions are formatted so that the compiled LaTeX does not overflow the page budget.
-6. SKILLS LIMIT: Return at most ${skillsLimit} skill tags in each category of the "skills" object.
-7. ACHIEVEMENTS LIMIT: Return at most ${achievementsLimit} achievements in the "achievements" array.
-8. Put most job-relevant projects first.
-9. Put most job-relevant certificates first.
-10. Optimize skill categories for the JD using only provided skills.
+5. SKILLS LIMIT: Return at most ${skillsLimit} skill tags in each category of the "skills" object.
+6. ACHIEVEMENTS LIMIT: Return at most ${achievementsLimit} achievements in the "achievements" array.
+7. Put most job-relevant projects first.
+8. Put most job-relevant certificates first.
+9. Optimize skill categories for the JD using only provided skills.
 11. ATS score should be estimated using a weighted model: Mandatory Hard Skills (40%), Contextual Evidence / measurable results in bullets (20%), Target Job Title match (15%), Education & Certifications (10%), Preferred Skills (5%), Soft Skills (5%), and ATS-readable Single-Column Layout (5%).
 
 Return this exact JSON shape:
@@ -159,7 +156,7 @@ function generateLocalResume(data) {
   const skills = optimizeSkills(data.skills, jdKeywords, data.skillsPerCategory);
   const atsScore = estimateDetailedAtsScore(data, selectedProjects, selectedCertificates, jdKeywords);
 
-  const maxBullets = (data.pageCount === 1) ? 3 : 4;
+  const maxBullets = 4;
   const experience = (data.experience || []).map(exp => ({
     ...exp,
     bullets: splitLines(exp.bullets).slice(0, maxBullets)
@@ -553,7 +550,7 @@ function ensureCounts(aiResume, sourceData) {
   }
 
   // Enforce experience bullets budget
-  const maxBullets = (sourceData.pageCount === 1) ? 3 : 4;
+  const maxBullets = 4;
   if (Array.isArray(clean.experience)) {
     clean.experience = clean.experience.map(exp => ({
       ...exp,

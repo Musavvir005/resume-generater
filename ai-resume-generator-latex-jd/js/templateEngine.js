@@ -1,4 +1,4 @@
-const USER_FORMAT_LATEX_TEMPLATE = String.raw`\documentclass[letterpaper,{{FONT_SIZE}}]{article}
+const USER_FORMAT_LATEX_TEMPLATE = String.raw`\documentclass[letterpaper,11pt]{article}
 
 \usepackage{latexsym}
 \usepackage[empty]{fullpage}
@@ -47,13 +47,11 @@ const USER_FORMAT_LATEX_TEMPLATE = String.raw`\documentclass[letterpaper,{{FONT_
 `;
 
 function buildLatexResume(data, resume) {
-  const isOnePage = Number(data.pageCount) === 1 || String(data.pageCount) === "1" || !data.pageCount;
-  
-  const spacingConfig = isOnePage ? String.raw`\addtolength{\oddsidemargin}{-0.6in}
+  const spacingConfig = String.raw`\addtolength{\oddsidemargin}{-0.6in}
 \addtolength{\evensidemargin}{-0.5in}
 \addtolength{\textwidth}{1.19in}
 \addtolength{\topmargin}{-.7in}
-\addtolength{\textheight}{1.44in}
+\addtolength{\textheight}{1.4in}
 
 \urlstyle{same}
 
@@ -62,14 +60,14 @@ function buildLatexResume(data, resume) {
 \setlength{\tabcolsep}{0in}
 
 \titleformat{\section}{
-  \vspace{-3pt}\scshape\raggedright\large\bfseries
-}{}{0em}{}[\color{black}\titlerule \vspace{-3pt}]
+  \vspace{-4pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
 
 \pdfgentounicode=1
 
 \newcommand{\resumeItem}[1]{
   \item\small{
-    {#1}\vspace{-1pt}
+    {#1}
   }
 }
 
@@ -78,92 +76,37 @@ function buildLatexResume(data, resume) {
     \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
       \textbf{#1} & \textbf{\small #2} \\
       \textit{\small#3} & \textit{\small #4} \\
-    \end{tabular*}\vspace{-3pt}
+    \end{tabular*}\vspace{-4pt}
 }
 
 \newcommand{\resumeSubSubheading}[2]{
     \item
     \begin{tabular*}{1.0\textwidth}{l@{\extracolsep{\fill}}r}
       \textit{\small#1} & \textit{\small #2} \\
-    \end{tabular*}\vspace{-3pt}
+    \end{tabular*}\vspace{-4pt}
 }
 
 \newcommand{\resumeProjectHeading}[2]{
     \item
     \begin{tabular*}{1.001\textwidth}{l@{\extracolsep{\fill}}r}
       \small#1 & \textbf{\small #2}\\
-    \end{tabular*}\vspace{-3pt}
+    \end{tabular*}\vspace{-4pt}
 }
 
-\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-1pt}}
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-2pt}}
 
 \renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
 \renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
 
-\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}, itemsep=1.0pt, parsep=0pt, topsep=1.0pt, partopsep=0pt]}
-\newcommand{\resumeSubHeadingListEnd}{\end{itemize}\vspace{-2pt}}
-\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in, itemsep=0.8pt, parsep=0pt, topsep=0.5pt, partopsep=0pt]}
-\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-2pt}}` 
-: String.raw`\addtolength{\oddsidemargin}{-0.5in}
-\addtolength{\evensidemargin}{-0.5in}
-\addtolength{\textwidth}{1.0in}
-\addtolength{\topmargin}{-.5in}
-\addtolength{\textheight}{1.0in}
-
-\urlstyle{same}
-
-\raggedbottom
-\raggedright
-\setlength{\tabcolsep}{0in}
-
-\titleformat{\section}{
-  \vspace{2pt}\scshape\raggedright\large\bfseries
-}{}{0em}{}[\color{black}\titlerule \vspace{-2pt}]
-
-\pdfgentounicode=1
-
-\newcommand{\resumeItem}[1]{
-  \item\small{
-    {#1}\vspace{1pt}
-  }
-}
-
-\newcommand{\resumeSubheading}[4]{
-  \item
-    \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
-      \textbf{#1} & \textbf{\small #2} \\
-      \textit{\small#3} & \textit{\small #4} \\
-    \end{tabular*}\vspace{-2pt}
-}
-
-\newcommand{\resumeSubSubheading}[2]{
-    \item
-    \begin{tabular*}{1.0\textwidth}{l@{\extracolsep{\fill}}r}
-      \textit{\small#1} & \textit{\small #2} \\
-    \end{tabular*}\vspace{-2pt}
-}
-
-\newcommand{\resumeProjectHeading}[2]{
-    \item
-    \begin{tabular*}{1.001\textwidth}{l@{\extracolsep{\fill}}r}
-      \small#1 & \textbf{\small #2}\\
-    \end{tabular*}\vspace{-2pt}
-}
-
-\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{1pt}}
-
-\renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
-\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
-
-\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}, itemsep=4.0pt, parsep=0pt, topsep=4.0pt, partopsep=0pt]}
-\newcommand{\resumeSubHeadingListEnd}{\end{itemize}\vspace{2pt}}
-\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in, itemsep=2.0pt, parsep=0pt, topsep=2.0pt, partopsep=0pt]}
-\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{2pt}}`;
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}, itemsep=2.0pt, parsep=0pt, topsep=1.0pt, partopsep=0pt]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in, itemsep=1.5pt, parsep=0pt, topsep=1.0pt, partopsep=0pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-2pt}}`;
 
   const maxProj = (data.projectCount !== undefined && data.projectCount !== null) ? data.projectCount : 3;
   const maxCerts = (data.certificateCount !== undefined && data.certificateCount !== null) ? data.certificateCount : 3;
   const finalAchievementsLimit = (data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3;
-  const maxBullets = isOnePage ? 2 : 3;
+  const maxBullets = 4;
   const finalSkillsLimit = (data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6;
 
   const cleanProjects = (resume.selectedProjects || []).slice(0, maxProj).map(p => ({
@@ -192,7 +135,7 @@ function buildLatexResume(data, resume) {
   }
 
   const replacements = {
-    FONT_SIZE: isOnePage ? "10pt" : "11pt",
+    FONT_SIZE: "11pt",
     LAYOUT_SPACING_CONFIG: spacingConfig,
     HEADER: formatHeaderLatex(data),
     EDUCATION: formatEducationLatex(resume.education || data.education),
@@ -300,12 +243,10 @@ function formatAchievementLatex(value) {
 }
 
 function buildHtmlPreview(data, resume) {
-  const isOnePage = Number(data.pageCount) === 1 || String(data.pageCount) === "1" || !data.pageCount;
-
   const maxProj = (data.projectCount !== undefined && data.projectCount !== null) ? data.projectCount : 3;
   const maxCerts = (data.certificateCount !== undefined && data.certificateCount !== null) ? data.certificateCount : 3;
   const finalAchievementsLimit = (data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3;
-  const maxBullets = isOnePage ? 2 : 3;
+  const maxBullets = 4;
   const finalSkillsLimit = (data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6;
 
   const cleanProjects = (resume.selectedProjects || []).slice(0, maxProj).map(p => ({

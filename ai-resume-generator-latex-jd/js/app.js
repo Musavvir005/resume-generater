@@ -44,7 +44,6 @@ let draftData = {
   jobTitle: "",
   projectCount: 3,
   certificateCount: 3,
-  pageCount: 1,
   achievementCount: 3,
   skillsPerCategory: 6,
   name: "",
@@ -533,7 +532,6 @@ function populateFormFields(data) {
   if (document.getElementById("jobTitle")) setValue("jobTitle", draftData.jobTitle);
   if (document.getElementById("projectCount")) setValue("projectCount", draftData.projectCount);
   if (document.getElementById("certificateCount")) setValue("certificateCount", draftData.certificateCount);
-  if (document.getElementById("pageCount")) setValue("pageCount", draftData.pageCount || 1);
   if (document.getElementById("achievementCount")) setValue("achievementCount", draftData.achievementCount || 3);
   if (document.getElementById("skillsPerCategory")) setValue("skillsPerCategory", draftData.skillsPerCategory || 6);
   if (document.getElementById("name")) setValue("name", draftData.name);
@@ -729,7 +727,6 @@ function collectData() {
   if (document.getElementById("jobTitle")) draftData.jobTitle = valueOf("jobTitle");
   if (document.getElementById("projectCount")) draftData.projectCount = clampInt(valueOf("projectCount"), 1, 8, 3);
   if (document.getElementById("certificateCount")) draftData.certificateCount = clampInt(valueOf("certificateCount"), 0, 8, 3);
-  if (document.getElementById("pageCount")) draftData.pageCount = clampInt(valueOf("pageCount"), 1, 2, 1);
   if (document.getElementById("achievementCount")) draftData.achievementCount = clampInt(valueOf("achievementCount"), 0, 8, 3);
   if (document.getElementById("skillsPerCategory")) draftData.skillsPerCategory = clampInt(valueOf("skillsPerCategory"), 3, 12, 6);
 
