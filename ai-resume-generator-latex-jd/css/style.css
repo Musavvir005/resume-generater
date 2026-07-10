@@ -1029,3 +1029,179 @@ button:disabled {
     margin: 2px 0 !important;
   }
 }
+
+/* Interactive Skills Tag Editor */
+.skills-tag-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.skills-tag-editor .tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.skills-tag-editor .tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.skills-tag-editor .tag-item:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.skills-tag-editor .tag-item .tag-edit-input {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  background: transparent;
+  outline: none;
+  color: var(--text);
+  width: auto;
+  min-width: 40px;
+}
+
+.skills-tag-editor .tag-item .tag-remove-btn {
+  color: var(--text-muted);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.skills-tag-editor .tag-item .tag-remove-btn:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.skills-tag-editor .tag-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.skills-tag-editor .new-tag-input {
+  flex-grow: 1;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+}
+
+.skills-tag-editor .add-tag-btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+}
+
+/* Missing Skills Helper Section */
+.skills-tag-editor .missing-skills-helper {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skills-tag-editor .helper-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.skills-tag-editor .helper-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.skills-tag-editor .helper-chip {
+  background: rgba(239, 68, 68, 0.05);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.skills-tag-editor .helper-chip:hover {
+  background: var(--danger);
+  color: #ffffff;
+  border-color: var(--danger);
+}
+
+/* Interactive Match Chip in ATS drawer */
+.chip-row .chip.missing {
+  cursor: pointer;
+}
+.chip-row .chip.missing:hover {
+  background: var(--danger);
+  color: #ffffff;
+  border-color: var(--danger);
+}
+
+/* Dropdown Modal styles for adding missing skills */
+.skill-add-modal {
+  position: absolute;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1001;
+  animation: fadeIn 0.15s ease;
+}
+
+.skill-add-modal button {
+  text-align: left;
+  background: transparent;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  border-radius: 4px;
+  border: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+.skill-add-modal button:hover {
+  background: var(--panel-soft);
+  color: var(--primary);
+}
+

@@ -223,6 +223,7 @@ function init() {
 
   checkAuthState();
   updateStepperUI();
+  setupInteractiveSkillsEditor();
 
   // Auto fast-forward to step 3 on index.html if name & email are pre-filled
   if (currentStep === 1 && draftData.name && draftData.email) {
@@ -697,7 +698,14 @@ function buildAnalysisHtml(resume) {
 function chipRow(items, missing = false) {
   const list = (items || []).filter(Boolean);
   if (!list.length) return `<p class="note">None.</p>`;
-  return `<div class="chip-row">${list.map(item => `<span class="chip ${missing ? "missing" : ""}">${escapeHtml(item)}</span>`).join("")}</div>`;
+  return `<div class="chip-row">${list.map(item => {
+    if (missing) {
+      const safeItem = escapeHtml(item).replace(/'/g, "\\'");
+      return `<span class="chip missing" title="Click to add this missing skill" onclick="showAddMissingSkillMenu(event, '${safeItem}')">${escapeHtml(item)} <i class="fas fa-plus-circle" style="font-size:0.65rem; margin-left:3px;"></i></span>`;
+    } else {
+      return `<span class="chip">${escapeHtml(item)}</span>`;
+    }
+  }).join("")}</div>`;
 }
 
 function collectData() {
@@ -1044,3 +1052,304 @@ function downloadFile(content, filename, type) {
   link.remove();
   URL.revokeObjectURL(link.href);
 }
+
+// ==========================================
+// 🛠️ Interactive Skills Tag Editor & ATS Popover
+// ==========================================
+
+function setupInteractiveSkillsEditor() {
+  const categories = [
+    { id: "skillsLanguages", label: "Languages", key: "languages" },
+    { id: "skillsFrameworks", label: "Frameworks & Libraries", key: "frameworks" },
+    { id: "skillsDatabases", label: "Databases", key: "databases" },
+    { id: "skillsTools", label: "Developer Tools", key: "tools" },
+    { id: "skillsCore", label: "Core Competencies", key: "core" }
+  ];
+
+  categories.forEach(cat => {
+    const textarea = document.getElementById(cat.id);
+    if (!textarea) return;
+
+    // Hide original textarea
+    textarea.style.display = "none";
+
+    // Check if editor already exists
+    let editor = textarea.parentNode.querySelector(".skills-tag-editor");
+    if (!editor) {
+      editor = document.createElement("div");
+      editor.className = "skills-tag-editor";
+      editor.setAttribute("data-for", cat.id);
+      editor.setAttribute("data-key", cat.key);
+      editor.innerHTML = `
+        <div class="tag-list"></div>
+        <div class="tag-input-row">
+          <input type="text" class="new-tag-input" placeholder="Add skill..." />
+          <button type="button" class="primary-btn add-tag-btn">+</button>
+        </div>
+        <div class="missing-skills-helper" style="display: none;">
+          <span class="helper-label">Add missing:</span>
+          <div class="helper-chips"></div>
+        </div>
+      `;
+      textarea.parentNode.appendChild(editor);
+
+      // Event listener for adding tag
+      const input = editor.querySelector(".new-tag-input");
+      const addBtn = editor.querySelector(".add-tag-btn");
+
+      const handleAdd = () => {
+        const val = input.value.trim();
+        if (val) {
+          addTagToEditor(editor, val);
+          input.value = "";
+        }
+      };
+
+      addBtn.addEventListener("click", handleAdd);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAdd();
+        }
+      });
+    }
+
+    // Populate tags from textarea value
+    renderTagsFromTextarea(editor, textarea.value);
+    
+    // Render helper missing skills in form
+    renderMissingSkillsHelper(editor);
+  });
+}
+
+function renderTagsFromTextarea(editor, textValue) {
+  const tagList = editor.querySelector(".tag-list");
+  tagList.innerHTML = "";
+  
+  const tags = String(textValue || "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  tags.forEach(tag => {
+    const tagEl = createTagElement(editor, tag);
+    tagList.appendChild(tagEl);
+  });
+}
+
+function createTagElement(editor, tagText) {
+  const tagEl = document.createElement("span");
+  tagEl.className = "tag-item";
+  
+  const textSpan = document.createElement("span");
+  textSpan.className = "tag-text";
+  textSpan.textContent = tagText;
+  tagEl.appendChild(textSpan);
+
+  // Edit inline on click
+  textSpan.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.className = "tag-edit-input";
+    input.value = textSpan.textContent;
+    tagEl.replaceChild(input, textSpan);
+    input.focus();
+
+    const saveEdit = () => {
+      const newVal = input.value.trim();
+      if (newVal) {
+        textSpan.textContent = newVal;
+        tagEl.replaceChild(textSpan, input);
+        updateTextareaFromEditor(editor);
+      } else {
+        tagEl.remove();
+        updateTextareaFromEditor(editor);
+      }
+    };
+
+    input.addEventListener("blur", saveEdit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveEdit();
+      }
+    });
+  });
+
+  const removeBtn = document.createElement("span");
+  removeBtn.className = "tag-remove-btn";
+  removeBtn.innerHTML = "&times;";
+  removeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    tagEl.remove();
+    updateTextareaFromEditor(editor);
+  });
+  tagEl.appendChild(removeBtn);
+
+  return tagEl;
+}
+
+function addTagToEditor(editor, tagText) {
+  const tagList = editor.querySelector(".tag-list");
+  const existingTags = [...tagList.querySelectorAll(".tag-text")].map(el => el.textContent.toLowerCase());
+  
+  if (existingTags.includes(tagText.toLowerCase())) return; // Avoid duplicates
+
+  const tagEl = createTagElement(editor, tagText);
+  tagList.appendChild(tagEl);
+  updateTextareaFromEditor(editor);
+}
+
+function updateTextareaFromEditor(editor) {
+  const textareaId = editor.getAttribute("data-for");
+  const categoryKey = editor.getAttribute("data-key");
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+
+  const tags = [...editor.querySelectorAll(".tag-text")].map(el => el.textContent.trim()).filter(Boolean);
+  const textVal = tags.join(", ");
+  textarea.value = textVal;
+
+  // Update memory
+  if (!draftData.skills) {
+    draftData.skills = { languages: "", frameworks: "", databases: "", tools: "", core: "" };
+  }
+  draftData.skills[categoryKey] = textVal;
+  localStorage.setItem("draftResumeData", JSON.stringify(draftData));
+  
+  // Dispatch input event to trigger auto-saving
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  
+  // If we are on output page, auto refresh the resume and ATS score in real-time
+  if (currentStep === 4) {
+    triggerAutoRecompute();
+  }
+}
+
+function renderMissingSkillsHelper(editor) {
+  const helperSection = editor.querySelector(".missing-skills-helper");
+  const helperChips = editor.querySelector(".helper-chips");
+  
+  helperSection.style.display = "none";
+  helperChips.innerHTML = "";
+
+  const savedJson = localStorage.getItem("latestResumeResultData");
+  if (!savedJson) return;
+
+  try {
+    const data = JSON.parse(savedJson);
+    const missing = data.resume?.missingKeywords || [];
+    if (!missing.length) return;
+
+    // Show only keywords that aren't already in the editor
+    const currentTags = [...editor.querySelectorAll(".tag-text")].map(el => el.textContent.toLowerCase());
+    const relevantMissing = missing.filter(keyword => !currentTags.includes(keyword.toLowerCase()));
+
+    if (!relevantMissing.length) return;
+
+    helperSection.style.display = "flex";
+    relevantMissing.slice(0, 5).forEach(keyword => {
+      const chip = document.createElement("span");
+      chip.className = "helper-chip";
+      chip.textContent = `+ ${keyword}`;
+      chip.addEventListener("click", () => {
+        addTagToEditor(editor, keyword);
+        renderMissingSkillsHelper(editor); // Update helper state
+      });
+      helperChips.appendChild(chip);
+    });
+  } catch (err) {
+    console.error("Failed to render missing skills helper:", err);
+  }
+}
+
+// Global popover modal to add missing skill to any category
+function showAddMissingSkillMenu(event, skillName) {
+  event.stopPropagation();
+  
+  // Remove existing modals
+  const existing = document.querySelector(".skill-add-modal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.className = "skill-add-modal";
+  modal.style.top = `${event.pageY + 10}px`;
+  modal.style.left = `${event.pageX + 10}px`;
+
+  const categories = [
+    { name: "Languages", key: "languages", id: "skillsLanguages" },
+    { name: "Frameworks & Libraries", key: "frameworks", id: "skillsFrameworks" },
+    { name: "Databases", key: "databases", id: "skillsDatabases" },
+    { name: "Developer Tools", key: "tools", id: "skillsTools" },
+    { name: "Core Competencies", key: "core", id: "skillsCore" }
+  ];
+
+  modal.innerHTML = `<span style="font-size:0.7rem; color:var(--text-muted); font-weight:700; padding:4px 8px; border-bottom:1px solid var(--border);">ADD "${escapeHtml(skillName).toUpperCase()}" TO:</span>`;
+
+  categories.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = cat.name;
+    btn.addEventListener("click", () => {
+      addSkillToCategory(cat.id, cat.key, skillName);
+      modal.remove();
+    });
+    modal.appendChild(btn);
+  });
+
+  document.body.appendChild(modal);
+
+  // Close when clicking outside
+  const closeHandler = () => {
+    modal.remove();
+    document.removeEventListener("click", closeHandler);
+  };
+  // Wait a tick to bind so the current click doesn't close it instantly
+  setTimeout(() => {
+    document.addEventListener("click", closeHandler);
+  }, 10);
+}
+
+function addSkillToCategory(textareaId, categoryKey, skillName) {
+  // Update memory
+  if (!draftData.skills) {
+    draftData.skills = { languages: "", frameworks: "", databases: "", tools: "", core: "" };
+  }
+  
+  let currentVal = draftData.skills[categoryKey] || "";
+  const existing = currentVal.split(",").map(s => s.trim()).filter(Boolean);
+  if (!existing.map(s => s.toLowerCase()).includes(skillName.toLowerCase())) {
+    existing.push(skillName);
+    draftData.skills[categoryKey] = existing.join(", ");
+    
+    // Save draft
+    localStorage.setItem("draftResumeData", JSON.stringify(draftData));
+    
+    // Update active textarea elements
+    const textarea = document.getElementById(textareaId);
+    if (textarea) {
+      textarea.value = draftData.skills[categoryKey];
+      // Trigger editor rebuild
+      const editor = textarea.parentNode.querySelector(".skills-tag-editor");
+      if (editor) {
+        renderTagsFromTextarea(editor, textarea.value);
+        renderMissingSkillsHelper(editor);
+      }
+    }
+    
+    // Auto recompute resume results
+    triggerAutoRecompute();
+  }
+}
+
+function triggerAutoRecompute() {
+  const resume = generateLocalResume(draftData);
+  latestJson = { input: draftData, resume };
+  latestLatex = buildLatexResume(draftData, resume);
+  localStorage.setItem("latestResumeResultData", JSON.stringify(latestJson));
+  localStorage.setItem("latestResumeLatex", latestLatex);
+  
+  // Re-render
+  renderResult(draftData, resume);
+  showStatus("Skill added and resume analysis recalculated!", false, true);
+}
+
