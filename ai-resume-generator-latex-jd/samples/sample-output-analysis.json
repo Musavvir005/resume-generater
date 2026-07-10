@@ -1,0 +1,338 @@
+{
+  "input": {
+    "jobTitle": "AI/ML Engineer Intern",
+    "projectCount": 3,
+    "certificateCount": 3,
+    "name": "Arekanti Siddartha",
+    "email": "siddarthaarekanti@gmail.com",
+    "phone": "+91 8688050497",
+    "github": "https://github.com/Siddartharekanti",
+    "linkedin": "https://www.linkedin.com/in/siddartha-arekanti-05557b24b/",
+    "leetcode": "https://leetcode.com/u/Siddartha_A/",
+    "education": [
+      {
+        "institution": "SRM University",
+        "location": "Amaravati, Andhra Pradesh",
+        "degree": "M.Tech in Cyber Security; CGPA: 8.30/10.0",
+        "duration": "Sep 2025 -- Jun 2027 (Expected)"
+      },
+      {
+        "institution": "SRM University",
+        "location": "Amaravati, Andhra Pradesh",
+        "degree": "B.Tech in Computer Science and Engineering; CGPA: 7.57/10.0",
+        "duration": "Jun 2021 -- May 2025"
+      }
+    ],
+    "experience": [
+      {
+        "role": "Software Engineering Intern",
+        "duration": "May 2024 -- Jul 2024",
+        "company": "SECENAI Semiconductors and Test Solutions Pvt. Ltd.",
+        "location": "Amaravati, Andhra Pradesh",
+        "bullets": "Architected a Student Attendance System using Face Recognition and OpenCV with 95%+ identification accuracy for 100+ students.\nAutomated attendance tracking with Machine Learning algorithms including SVM and CNN, improving efficiency by 80% versus manual methods.\nEngineered real-time facial detection and recognition pipeline using Python, OpenCV, NumPy, and scikit-learn."
+      }
+    ],
+    "patents": [
+      {
+        "title": "FEELGAN: Federated Edge Learning with GANs for Medical Image Analysis",
+        "detail": "Patent Approved (Application No: 202441083307) -- Pioneered a privacy-preserving disease detection system using federated learning, generative adversarial networks, and decentralized healthcare diagnostics."
+      }
+    ],
+    "projects": [
+      {
+        "title": "FEELGAN - Medical Image Analysis System",
+        "technologies": "Python, TensorFlow, PyTorch, GANs, CNNs, Federated Learning",
+        "description": "Privacy-preserving disease detection system using Federated Edge Learning and GANs for distributed medical image analysis.",
+        "features": "Synthetic medical image generation, CNN classification, COVID-19/TB/OCT dataset training, federated learning workflow, privacy-preserving diagnostics",
+        "metrics": "15% diagnostic accuracy improvement, 10,000+ synthetic medical images, 90%+ accuracy",
+        "link": ""
+      },
+      {
+        "title": "Real Estate Platform",
+        "technologies": "React, Node.js, MongoDB, Socket.io, JWT, Bcrypt, React Leaflet",
+        "description": "Full-stack real estate web application with secure authentication, property listings, geolocation, and real-time chat.",
+        "features": "JWT authentication, property search, real-time chat, map integration, Context API state management",
+        "metrics": "40% reduction in unauthorized access attempts, 60% higher user engagement, 35% fewer state-related bugs",
+        "link": ""
+      },
+      {
+        "title": "AI-Powered Documentation ChatBot",
+        "technologies": "Python, React, FastAPI, RAG, LLM, OpenAI, Embeddings",
+        "description": "Intelligent chatbot for context-aware question answering from company documentation using Retrieval-Augmented Generation.",
+        "features": "Document parsing, cleaning, chunking, semantic search, REST APIs, React frontend, real-time Q&A",
+        "metrics": "1,000+ pages processed, sub-second response times",
+        "link": ""
+      },
+      {
+        "title": "Student Attendance System",
+        "technologies": "Python, OpenCV, NumPy, scikit-learn, SVM, CNN",
+        "description": "Face-recognition based attendance system for automating classroom attendance tracking.",
+        "features": "Face detection, face recognition, attendance logging, model training, real-time camera pipeline",
+        "metrics": "95%+ identification accuracy, 100+ students",
+        "link": ""
+      }
+    ],
+    "certificates": [
+      {
+        "title": "Machine Learning Specialization",
+        "issuer": "Coursera",
+        "date": "2024",
+        "skills": "Machine Learning, supervised learning, neural networks, model evaluation"
+      },
+      {
+        "title": "Deep Learning with PyTorch",
+        "issuer": "Udemy",
+        "date": "2024",
+        "skills": "PyTorch, CNNs, neural networks, computer vision"
+      },
+      {
+        "title": "Full Stack Web Development",
+        "issuer": "freeCodeCamp",
+        "date": "2023",
+        "skills": "React, Node.js, MongoDB, REST APIs"
+      },
+      {
+        "title": "Git and GitHub Essentials",
+        "issuer": "Microsoft Learn",
+        "date": "2023",
+        "skills": "Git, GitHub, version control"
+      }
+    ],
+    "achievements": [
+      "LeetCode -- Solved 350+ problems across data structures and algorithms",
+      "Anveshan 2024 -- Presented FEELGAN at National Student Research Program",
+      "Sushacks 2025 -- Competed in Nationwide Innovation Hackathon"
+    ],
+    "skills": {
+      "languages": "Python, C++, JavaScript, SQL, HTML/CSS",
+      "frameworks": "React, Node.js, Flask, TensorFlow, PyTorch, scikit-learn, OpenCV",
+      "databases": "MongoDB, MySQL",
+      "tools": "Git, GitHub, VS Code, PyCharm, Jupyter Notebook, Postman, Docker",
+      "core": "Machine Learning, Deep Learning, Computer Vision, GANs, CNNs, Federated Learning, REST APIs"
+    },
+    "jobDescription": "We are hiring an AI/ML Engineer Intern with strong knowledge of Python, machine learning, deep learning, computer vision, TensorFlow or PyTorch, model evaluation, and API integration. Responsibilities include developing ML models, preprocessing datasets, building computer vision pipelines, experimenting with CNN architectures, documenting results, and collaborating with developers to integrate models into web applications. Preferred skills include FastAPI, REST APIs, Git, Docker, RAG, LLMs, and experience with healthcare or image analysis projects."
+  },
+  "resume": {
+    "targetRole": "AI/ML Engineer Intern",
+    "professionalHeadline": "AI/ML Engineer Intern",
+    "education": [
+      {
+        "institution": "SRM University",
+        "location": "Amaravati, Andhra Pradesh",
+        "degree": "M.Tech in Cyber Security; CGPA: 8.30/10.0",
+        "duration": "Sep 2025 -- Jun 2027 (Expected)"
+      },
+      {
+        "institution": "SRM University",
+        "location": "Amaravati, Andhra Pradesh",
+        "degree": "B.Tech in Computer Science and Engineering; CGPA: 7.57/10.0",
+        "duration": "Jun 2021 -- May 2025"
+      }
+    ],
+    "experience": [
+      {
+        "role": "Software Engineering Intern",
+        "duration": "May 2024 -- Jul 2024",
+        "company": "SECENAI Semiconductors and Test Solutions Pvt. Ltd.",
+        "location": "Amaravati, Andhra Pradesh",
+        "bullets": [
+          "Architected a Student Attendance System using Face Recognition and OpenCV with 95%+ identification accuracy for 100+ students.",
+          "Automated attendance tracking with Machine Learning algorithms including SVM and CNN, improving efficiency by 80% versus manual methods.",
+          "Engineered real-time facial detection and recognition pipeline using Python, OpenCV, NumPy, and scikit-learn."
+        ]
+      }
+    ],
+    "patents": [
+      {
+        "title": "FEELGAN: Federated Edge Learning with GANs for Medical Image Analysis",
+        "detail": "Patent Approved (Application No: 202441083307) -- Pioneered a privacy-preserving disease detection system using federated learning, generative adversarial networks, and decentralized healthcare diagnostics."
+      }
+    ],
+    "selectedProjects": [
+      {
+        "title": "FEELGAN - Medical Image Analysis System",
+        "technologies": [
+          "Python",
+          "TensorFlow",
+          "PyTorch",
+          "GANs",
+          "CNNs",
+          "Federated Learning"
+        ],
+        "link": "",
+        "bullets": [
+          "Developed FEELGAN - Medical Image Analysis System using Python, TensorFlow, PyTorch, GANs, CNNs, Federated Learning, aligned with Python, Tensorflow, Pytorch, CNNs, Image Analysis.",
+          "Implemented Synthetic medical image generation, CNN classification, COVID-19/TB/OCT dataset training, federated learning workflow, improving practical coverage of production-style workflows.",
+          "Delivered measurable outcomes including 15% diagnostic accuracy improvement, 10,000+ synthetic medical images, 90%+ accuracy."
+        ]
+      },
+      {
+        "title": "AI-Powered Documentation ChatBot",
+        "technologies": [
+          "Python",
+          "React",
+          "FastAPI",
+          "RAG",
+          "LLM",
+          "OpenAI",
+          "Embeddings"
+        ],
+        "link": "",
+        "bullets": [
+          "Developed AI-Powered Documentation ChatBot using Python, React, FastAPI, RAG, LLM, OpenAI, aligned with Python, Fastapi, REST API, API, Rag.",
+          "Implemented Document parsing, cleaning, chunking, semantic search, improving practical coverage of production-style workflows.",
+          "Delivered measurable outcomes including 1,000+ pages processed, sub-second response times."
+        ]
+      },
+      {
+        "title": "Student Attendance System",
+        "technologies": [
+          "Python",
+          "OpenCV",
+          "NumPy",
+          "scikit-learn",
+          "SVM",
+          "CNN"
+        ],
+        "link": "",
+        "bullets": [
+          "Developed Student Attendance System using Python, OpenCV, NumPy, scikit-learn, SVM, CNN, aligned with Python, Model.",
+          "Implemented Face detection, face recognition, attendance logging, model training, improving practical coverage of production-style workflows.",
+          "Delivered measurable outcomes including 95%+ identification accuracy, 100+ students."
+        ]
+      }
+    ],
+    "selectedCertificates": [
+      {
+        "title": "Deep Learning with PyTorch",
+        "issuer": "Udemy",
+        "date": "2024",
+        "reason": "Relevant to Computer Vision, Pytorch, CNNs, Computer"
+      },
+      {
+        "title": "Machine Learning Specialization",
+        "issuer": "Coursera",
+        "date": "2024",
+        "reason": "Relevant to Machine Learning, Model Evaluation, Learning, Machine"
+      },
+      {
+        "title": "Full Stack Web Development",
+        "issuer": "freeCodeCamp",
+        "date": "2023",
+        "reason": "Relevant to REST API, API"
+      }
+    ],
+    "skills": {
+      "Languages": [
+        "Python",
+        "C++",
+        "HTML/CSS",
+        "JavaScript",
+        "SQL"
+      ],
+      "Frameworks & Libraries": [
+        "PyTorch",
+        "TensorFlow",
+        "Flask",
+        "Node.js",
+        "OpenCV",
+        "React",
+        "scikit-learn"
+      ],
+      "Databases": [
+        "MongoDB",
+        "MySQL"
+      ],
+      "Developer Tools": [
+        "Docker",
+        "Git",
+        "GitHub",
+        "Jupyter Notebook",
+        "Postman",
+        "PyCharm",
+        "VS Code"
+      ],
+      "Core Competencies": [
+        "CNNs",
+        "Computer Vision",
+        "Deep Learning",
+        "Federated Learning",
+        "Machine Learning",
+        "REST APIs",
+        "GANs"
+      ]
+    },
+    "achievements": [
+      "LeetCode -- Solved 350+ problems across data structures and algorithms",
+      "Anveshan 2024 -- Presented FEELGAN at National Student Research Program",
+      "Sushacks 2025 -- Competed in Nationwide Innovation Hackathon"
+    ],
+    "jdKeywords": [
+      "Python",
+      "Fastapi",
+      "REST API",
+      "API",
+      "Git",
+      "Docker",
+      "Machine Learning",
+      "Deep Learning",
+      "Computer Vision",
+      "Tensorflow",
+      "Pytorch",
+      "CNNs",
+      "Rag",
+      "LLMs",
+      "Healthcare",
+      "Image Analysis",
+      "Model Evaluation",
+      "Learning",
+      "Computer",
+      "Vision",
+      "Include",
+      "Models",
+      "Hiring",
+      "Engineer",
+      "Machine",
+      "Deep",
+      "Model",
+      "Evaluation"
+    ],
+    "matchedKeywords": [
+      "Python",
+      "Fastapi",
+      "REST API",
+      "API",
+      "Git",
+      "Docker",
+      "Machine Learning",
+      "Deep Learning",
+      "Computer Vision",
+      "Tensorflow",
+      "Pytorch",
+      "CNNs",
+      "Rag",
+      "Image Analysis",
+      "Model Evaluation",
+      "Learning",
+      "Computer",
+      "Vision",
+      "Machine",
+      "Deep",
+      "Model",
+      "Evaluation"
+    ],
+    "missingKeywords": [
+      "LLMs",
+      "Healthcare",
+      "Include",
+      "Models",
+      "Hiring",
+      "Engineer"
+    ],
+    "atsScore": 84,
+    "selectionReason": "Projects and certificates were ranked by keyword overlap with the job description and then trimmed to the selected counts.",
+    "suggestions": [
+      "Consider learning or proving experience with: LLMs, Healthcare, Include, Models, Hiring."
+    ]
+  }
+}

@@ -1,0 +1,188 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{multicol}
+\setlength{\multicolsep}{-3.0pt}
+\setlength{\columnsep}{-1pt}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.6in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.19in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.4in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & \textbf{\small #2} \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{1.0\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{1.001\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & \textbf{\small #2}\\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+\begin{center}
+
+    \textbf{\Huge \scshape Arekanti Siddartha} \\ \vspace{-11pt} 
+    
+    \vspace{20pt}
+
+
+    \href{https://github.com/Siddartharekanti}{\raisebox{0\height}\faGithub\ {Github}}
+    ~ $|$ ~ 
+    \href{https://www.linkedin.com/in/siddartha-arekanti-05557b24b/}{\raisebox{0\height}\faLinkedin\ {Linkedin}}~ $|$ ~ 
+        \href{https://leetcode.com/u/Siddartha_A/}{\raisebox{0\height}\faCode\ {LeetCode}} ~ $|$ ~
+    \href{mailto:siddarthaarekanti@gmail.com}{\raisebox{-0.1\height}\faEnvelope\  {siddarthaarekanti@gmail.com}}~ $|$ ~ 
+    \small \raisebox{-0.01\height}\faPhone\ +91 8688050497
+    
+    \vspace{-8pt}
+\end{center}
+
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {SRM University}{Amaravati, Andhra Pradesh}
+      {M.Tech in Cyber Security; \textbf{CGPA: 8.30/10.0}}{Sep 2025 -- Jun 2027 (Expected)}
+    \resumeSubheading
+      {SRM University}{Amaravati, Andhra Pradesh}
+      {B.Tech in Computer Science and Engineering; \textbf{CGPA: 7.57/10.0}}{Jun 2021 -- May 2025}
+  \resumeSubHeadingListEnd
+\vspace{-15pt}
+
+\section{E\xperience}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Software Engineering Intern}{May 2024 -- Jul 2024}
+      {SECENAI Semiconductors and Test Solutions Pvt. Ltd.}{Amaravati, Andhra Pradesh}
+      \resumeItemListStart
+        \resumeItem{Architected a robust Student Attendance System using Face Recognition and OpenCV, achieving \textbf{95\%+ identification accuracy} for 100+ students.}
+        \resumeItem{Automated attendance tracking by integrating Machine Learning algorithms (SVM, CNN), improving efficiency by \textbf{80\% vs. manual methods}.}
+        \resumeItem{Engineered real-time facial detection and recognition pipeline using Python, OpenCV, NumPy, and scikit-learn.}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+\vspace{-15pt}
+
+\section{Patents \& Publications}
+  \resumeSubHeadingListStart
+    \resumeProjectHeading
+        {\textbf{FEELGAN: Federated Edge Learning with GANs for Medical Image Analysis}}{}
+        \resumeItemListStart
+            \resumeItem{\textbf{Patent Approved} (Application No: 202441083307) -- Pioneered an innovative privacy-preserving disease detection system leveraging federated learning along with generative adversarial networks and decentralized healthcare diagnostics across distributed medical institutions.}
+        \resumeItemListEnd
+  \resumeSubHeadingListEnd
+\vspace{-15pt}
+
+\section{Projects}
+    \resumeSubHeadingListStart
+    
+      \resumeProjectHeading
+          {\textbf{FEELGAN - Medical Image Analysis System} $|$ \emph{Python, TensorFlow, PyTorch, GANs, CNNs}}{}
+          \resumeItemListStart
+            \resumeItem{Designed privacy-preserving disease detection using Federated Edge Learning and GANs, boosting diagnostic accuracy by \textbf{15\% }for rare diseases across decentralized institutions.}
+            \resumeItem{Generated \textbf{10,000+ synthetic medical images} using GANs; trained custom CNNs on COVID-19, TB, and OCT datasets achieving \textbf{90\%+ accuracy}.}
+            \resumeItem{\textbf{Patent Approved} for innovative federated learning framework; system anticipated to streamline medical image analysis workflow.}
+          \resumeItemListEnd
+          \vspace{-13pt}
+          
+      \resumeProjectHeading
+          {\textbf{Real Estate Platform} $|$ \emph{React, Node.js, MongoDB}}{}
+          \resumeItemListStart
+            \resumeItem{Developed full-stack real estate application with JWT authentication and Bcrypt hashing, reducing unauthorized access attempts by \textbf{40\%}.}
+            \resumeItem{Integrated real-time chat using Socket.io, interactive geolocation with React Leaflet, and Context API for state management, increasing user engagement by \textbf{60\%}.}
+            \resumeItem{Optimized state management reducing state-related bugs by \textbf{35\%} during testing and ensuring seamless user experience.}
+          \resumeItemListEnd
+          \vspace{-13pt}
+          
+      \resumeProjectHeading
+          {\textbf{AI-Powered Documentation ChatBot} $|$ \emph{Python, React, FastAPI, RAG, LLM, OpenAI}}{}
+          \resumeItemListStart
+            \resumeItem{Created intelligent chatbot using Retrieval-Augmented Generation (RAG) for context-aware Q\&A from company documentation.}
+            \resumeItem{Preprocessed \textbf{1,000+ pages} of technical documentation through parsing, cleaning, chunking, and deployed embeddings for semantic search.}
+            \resumeItem{Constructed FastAPI backend with REST endpoints and integrated React frontend for real-time question answering with sub-second response times.}
+          \resumeItemListEnd
+          
+    \resumeSubHeadingListEnd
+\vspace{-15pt}
+
+\section{Technical Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{Languages}{: Python, C++, JavaScript, SQL, HTML/CSS} \\
+     \textbf{Frameworks \& Libraries}{: React, Node.js, Flask, TensorFlow, PyTorch, scikit-learn, OpenCV} \\
+     \textbf{Databases}{: MongoDB, MySQL} \\
+     \textbf{Developer Tools}{: Git, GitHub, VS Code, PyCharm, Jupyter Notebook, Postman, Docker} \\
+     \textbf{Core Competencies}{: Machine Learning, Deep Learning, Computer Vision, GANs, CNNs, Federated Learning, REST APIs}
+    }}
+ \end{itemize}
+ \vspace{-18pt}
+
+\section{Achievements}
+    \resumeSubHeadingListStart
+        \resumeProjectHeading
+            {\textbf{LeetCode} -- Solved \textbf{350+ problems} across data structures and algorithms}{}
+        \resumeProjectHeading
+            {\textbf{Anveshan 2024} -- Presented FEELGAN at National Student Research Program}{}
+        \resumeProjectHeading
+            {\textbf{Sushacks 2025} -- Competed in Nationwide Innovation Hackathon}{}
+    \resumeSubHeadingListEnd
+
+\end{document}

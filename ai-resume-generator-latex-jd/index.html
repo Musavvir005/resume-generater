@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResuCraft AI - Profile & Education</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- 1. TOP HEADER NAVIGATION (SaaS Dashboard Style) -->
+  <header class="app-header">
+    <div class="brand-area" onclick="location.href='index.html'">
+      <div class="brand-logo">
+        <i class="fas fa-file-invoice"></i> ResuCraft AI
+      </div>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <nav class="stepper-horizontal">
+      <a href="index.html" class="menu-item active" data-step="1">
+        <i class="fas fa-user-circle"></i>
+        <span>Profile & Edu</span>
+      </a>
+      <a href="experience.html" class="menu-item" data-step="2">
+        <i class="fas fa-briefcase"></i>
+        <span>Exp & Projects</span>
+      </a>
+      <a href="ai.html" class="menu-item" data-step="3">
+        <i class="fas fa-brain"></i>
+        <span>AI & Job Target</span>
+      </a>
+      <a href="output.html" class="menu-item" data-step="4" id="sidebarStep4Btn">
+        <i class="fas fa-file-alt"></i>
+        <span>Resume Output</span>
+      </a>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <div id="userBadge" class="social-avatar-widget guest">
+        <div class="avatar-ring">
+          <div class="avatar-img" id="avatarImg">G</div>
+        </div>
+        <div class="avatar-details">
+          <span class="avatar-username" id="userStatusText">Guest Mode</span>
+        </div>
+      </div>
+      <button id="authModalBtn" type="button" class="auth-link">Login / Register</button>
+      <button id="logoutBtn" type="button" class="auth-link danger" style="display: none;">Logout</button>
+      <button id="themeToggle" type="button" class="ghost-btn small-btn" title="Toggle theme">
+        <i class="fas fa-adjust"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. SPLIT LAYOUT APP BODY -->
+  <div class="app-body hide-preview">
+    
+    <!-- Left Column: Form Feed -->
+    <main class="center-feed">
+      
+      <div class="feed-header">
+        <h1 id="feedTitle">Create Profile</h1>
+        <p id="feedSubtitle">Provide your base credentials and academic history.</p>
+      </div>
+
+      <form id="resumeForm">
+        
+        <!-- STEP 1: Profile & Education Feed -->
+        <div class="wizard-step active" id="step-1">
+          
+          <!-- Card 1: Personal details -->
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div class="feed-card-icon"><i class="fas fa-user"></i></div>
+              <div class="feed-card-title">
+                <h3>Personal Details</h3>
+                <p>Inserted into the header format of your LaTeX template.</p>
+              </div>
+            </div>
+            <div class="feed-card-body">
+              <div class="grid two">
+                <label class="full-width">Full Name<input id="name" required placeholder="Arekanti Siddhartha" /></label>
+                <label class="full-width">Email<input id="email" type="email" required placeholder="siddartha@example.com" /></label>
+                <label>Phone<input id="phone" placeholder="+91 86880 50497" /></label>
+                <label>GitHub URL<input id="github" placeholder="https://github.com/username" /></label>
+                <label>LinkedIn URL<input id="linkedin" placeholder="https://linkedin.com/in/username" /></label>
+                <label>LeetCode URL<input id="leetcode" placeholder="https://leetcode.com/u/username" /></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Education list -->
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div class="feed-card-icon"><i class="fas fa-graduation-cap"></i></div>
+              <div class="feed-card-title">
+                <h3>Education Entries</h3>
+                <p>Add one or more educational timelines.</p>
+              </div>
+            </div>
+            <div class="feed-card-body">
+              <div id="educationContainer"></div>
+              <button id="addEducationBtn" type="button" class="ghost-btn small-btn" style="margin-top: 12px; width: 100%;">
+                <i class="fas fa-plus"></i> Add education
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Wizard Navigation Row -->
+        <div class="wizard-nav" id="wizardNav">
+          <button type="button" class="ghost-btn" id="prevBtn" style="visibility: hidden;">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button type="button" class="primary-btn" id="nextBtn">
+            Next: Exp & Projects <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+
+      </form>
+
+      <footer class="footer">
+        <p>Built as an open source resume optimizer. Hashed password credentials saved securely inside local SQLite database.</p>
+      </footer>
+    </main>
+
+    <!-- Right Column: Live Resume Dashboard -->
+    <aside class="right-drawer" id="rightDrawer">
+      <div class="right-drawer-header">
+        <h2>Live Resume Dashboard</h2>
+        <p>Real-time ATS scores, formatting structures, and LaTeX exports.</p>
+      </div>
+
+      <div id="status" class="status">Ready.</div>
+
+      <!-- Real-time ATS Circular Widget -->
+      <div class="social-score-container">
+        <div class="circle-progress-wrapper med-score" id="scoreCircle">
+          <span id="atsScore">--</span>
+        </div>
+        <div class="score-details">
+          <h4 class="score-title">Estimated ATS Keyword Score</h4>
+          <span class="score-subtitle" id="selectedCounts">--</span>
+        </div>
+      </div>
+
+      <!-- Live Preview Area Tabs -->
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="preview">Preview</button>
+        <button type="button" class="tab" data-tab="latex">LaTeX Code</button>
+        <button type="button" class="tab" data-tab="analysis">ATS Analysis</button>
+      </div>
+
+      <div class="right-drawer-body">
+        
+        <section id="previewTab" class="tab-content active">
+          <div id="resumePreview" class="resume-preview empty-state">Generated resume preview will appear here. Enter details and generate to start.</div>
+        </section>
+
+        <section id="latexTab" class="tab-content">
+          <pre id="latexOutput" class="code-block">LaTeX output will appear here.</pre>
+        </section>
+
+        <section id="analysisTab" class="tab-content">
+          <div id="analysisOutput" class="analysis-box">JD analysis details will appear here.</div>
+        </section>
+
+      </div>
+
+      <!-- Action Footer -->
+      <div class="right-drawer-footer">
+        <div class="button-row full-width">
+          <button id="downloadTexBtn" type="button" class="primary-btn" style="flex-grow: 1;">
+            <i class="fas fa-file-download"></i> Download .tex
+          </button>
+          <button id="copyLatexBtn" type="button" class="secondary-btn">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+          <button id="downloadJsonBtn" type="button" class="ghost-btn" title="Download JSON Analysis">
+            <i class="fas fa-code"></i>
+          </button>
+          <button id="printBtn" type="button" class="ghost-btn" title="Print Preview">
+            <i class="fas fa-print"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Sleek Auth Modal Overlay -->
+  <div id="authModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="authModalTitle">Sign In</h2>
+        <button id="closeAuthModal" type="button" class="close-btn">&times;</button>
+      </div>
+      <form id="authForm">
+        <div class="status error" id="authError" style="display: none;"></div>
+        <div class="status success" id="authSuccess" style="display: none;"></div>
+        
+        <label>Username
+          <input id="authUsername" type="text" placeholder="Enter username" required minlength="3" autocomplete="username" />
+        </label>
+        <label>Password
+          <input id="authPassword" type="password" placeholder="Enter password" required minlength="5" autocomplete="current-password" />
+        </label>
+        
+        <div class="button-row compact" style="margin-top: 18px;">
+          <button id="authSubmitBtn" type="submit" class="primary-btn" style="width: 100%;">Sign In</button>
+        </div>
+        <p class="modal-switch-text">
+          Don't have an account? <a href="#" id="toggleAuthMode">Create one now</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/sampleData.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/templateEngine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
