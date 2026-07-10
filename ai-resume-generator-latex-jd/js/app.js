@@ -1271,11 +1271,21 @@ function addTagToEditor(editor, tagText) {
   const tagList = editor.querySelector(".tag-list");
   const existingTags = [...tagList.querySelectorAll(".tag-text")].map(el => el.textContent.toLowerCase());
   
-  if (existingTags.includes(tagText.toLowerCase())) return; // Avoid duplicates
+  const subTags = tagText.split(",").map(t => t.trim()).filter(Boolean);
+  let addedAny = false;
 
-  const tagEl = createTagElement(editor, tagText);
-  tagList.appendChild(tagEl);
-  updateTextareaFromEditor(editor);
+  subTags.forEach(subText => {
+    if (!existingTags.includes(subText.toLowerCase())) {
+      const tagEl = createTagElement(editor, subText);
+      tagList.appendChild(tagEl);
+      existingTags.push(subText.toLowerCase());
+      addedAny = true;
+    }
+  });
+
+  if (addedAny) {
+    updateTextareaFromEditor(editor);
+  }
 }
 
 function updateTextareaFromEditor(editor) {
@@ -1396,8 +1406,18 @@ function addSkillToCategory(textareaId, categoryKey, skillName) {
   
   let currentVal = draftData.skills[categoryKey] || "";
   const existing = currentVal.split(",").map(s => s.trim()).filter(Boolean);
-  if (!existing.map(s => s.toLowerCase()).includes(skillName.toLowerCase())) {
-    existing.push(skillName);
+  
+  const subSkills = skillName.split(",").map(s => s.trim()).filter(Boolean);
+  let addedAny = false;
+
+  subSkills.forEach(sub => {
+    if (!existing.map(s => s.toLowerCase()).includes(sub.toLowerCase())) {
+      existing.push(sub);
+      addedAny = true;
+    }
+  });
+
+  if (addedAny) {
     draftData.skills[categoryKey] = existing.join(", ");
     
     // Save draft
