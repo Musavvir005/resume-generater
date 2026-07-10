@@ -160,11 +160,11 @@ function buildLatexResume(data, resume) {
 \newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in, itemsep=2.0pt, parsep=0pt, topsep=2.0pt, partopsep=0pt]}
 \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{2pt}}`;
 
-  const maxProj = Math.min(data.projectCount || 3, isOnePage ? 2 : 4);
-  const maxCerts = Math.min(data.certificateCount || 3, isOnePage ? 2 : 4);
-  const finalAchievementsLimit = Math.min((data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3, isOnePage ? 2 : 3);
+  const maxProj = (data.projectCount !== undefined && data.projectCount !== null) ? data.projectCount : 3;
+  const maxCerts = (data.certificateCount !== undefined && data.certificateCount !== null) ? data.certificateCount : 3;
+  const finalAchievementsLimit = (data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3;
   const maxBullets = isOnePage ? 2 : 3;
-  const finalSkillsLimit = Math.min((data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6, isOnePage ? 5 : 8);
+  const finalSkillsLimit = (data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6;
 
   const cleanProjects = (resume.selectedProjects || []).slice(0, maxProj).map(p => ({
     ...p,
@@ -302,11 +302,11 @@ function formatAchievementLatex(value) {
 function buildHtmlPreview(data, resume) {
   const isOnePage = Number(data.pageCount) === 1 || String(data.pageCount) === "1" || !data.pageCount;
 
-  const maxProj = Math.min(data.projectCount || 3, isOnePage ? 2 : 4);
-  const maxCerts = Math.min(data.certificateCount || 3, isOnePage ? 2 : 4);
-  const finalAchievementsLimit = Math.min((data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3, isOnePage ? 2 : 3);
+  const maxProj = (data.projectCount !== undefined && data.projectCount !== null) ? data.projectCount : 3;
+  const maxCerts = (data.certificateCount !== undefined && data.certificateCount !== null) ? data.certificateCount : 3;
+  const finalAchievementsLimit = (data.achievementCount !== undefined && data.achievementCount !== null) ? data.achievementCount : 3;
   const maxBullets = isOnePage ? 2 : 3;
-  const finalSkillsLimit = Math.min((data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6, isOnePage ? 5 : 8);
+  const finalSkillsLimit = (data.skillsPerCategory !== undefined && data.skillsPerCategory !== null) ? data.skillsPerCategory : 6;
 
   const cleanProjects = (resume.selectedProjects || []).slice(0, maxProj).map(p => ({
     ...p,
