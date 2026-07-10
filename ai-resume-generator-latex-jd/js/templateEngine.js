@@ -1,4 +1,4 @@
-const USER_FORMAT_LATEX_TEMPLATE = String.raw`\documentclass[letterpaper,11pt]{article}
+const USER_FORMAT_LATEX_TEMPLATE = String.raw`\documentclass[letterpaper,{{FONT_SIZE}}]{article}
 
 \usepackage{latexsym}
 \usepackage[empty]{fullpage}
@@ -62,8 +62,8 @@ function buildLatexResume(data, resume) {
 \setlength{\tabcolsep}{0in}
 
 \titleformat{\section}{
-  \vspace{-6pt}\scshape\raggedright\large\bfseries
-}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+  \vspace{-3pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{-3pt}]
 
 \pdfgentounicode=1
 
@@ -78,24 +78,24 @@ function buildLatexResume(data, resume) {
     \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
       \textbf{#1} & \textbf{\small #2} \\
       \textit{\small#3} & \textit{\small #4} \\
-    \end{tabular*}\vspace{-6pt}
+    \end{tabular*}\vspace{-3pt}
 }
 
 \newcommand{\resumeSubSubheading}[2]{
     \item
     \begin{tabular*}{1.0\textwidth}{l@{\extracolsep{\fill}}r}
       \textit{\small#1} & \textit{\small #2} \\
-    \end{tabular*}\vspace{-6pt}
+    \end{tabular*}\vspace{-3pt}
 }
 
 \newcommand{\resumeProjectHeading}[2]{
     \item
     \begin{tabular*}{1.001\textwidth}{l@{\extracolsep{\fill}}r}
       \small#1 & \textbf{\small #2}\\
-    \end{tabular*}\vspace{-6pt}
+    \end{tabular*}\vspace{-3pt}
 }
 
-\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-3pt}}
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-1pt}}
 
 \renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
 \renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
@@ -103,7 +103,7 @@ function buildLatexResume(data, resume) {
 \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}, itemsep=1.0pt, parsep=0pt, topsep=1.0pt, partopsep=0pt]}
 \newcommand{\resumeSubHeadingListEnd}{\end{itemize}\vspace{-2pt}}
 \newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in, itemsep=0.8pt, parsep=0pt, topsep=0.5pt, partopsep=0pt]}
-\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-3pt}}` 
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-2pt}}` 
 : String.raw`\addtolength{\oddsidemargin}{-0.5in}
 \addtolength{\evensidemargin}{-0.5in}
 \addtolength{\textwidth}{1.0in}
@@ -192,6 +192,7 @@ function buildLatexResume(data, resume) {
   }
 
   const replacements = {
+    FONT_SIZE: isOnePage ? "10pt" : "11pt",
     LAYOUT_SPACING_CONFIG: spacingConfig,
     HEADER: formatHeaderLatex(data),
     EDUCATION: formatEducationLatex(resume.education || data.education),
