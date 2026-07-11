@@ -1,1027 +1,1929 @@
-const elements = {
-  form: document.getElementById("resumeForm"),
-  apiKey: document.getElementById("apiKey"),
-  modelName: document.getElementById("modelName"),
-  saveApiKeyBtn: document.getElementById("saveApiKeyBtn"),
-  clearApiKeyBtn: document.getElementById("clearApiKeyBtn"),
-  generateLocalBtn: document.getElementById("generateLocalBtn"),
-  loadSampleBtn: document.getElementById("loadSampleBtn"),
-  clearFormBtn: document.getElementById("clearFormBtn"),
-  themeToggle: document.getElementById("themeToggle"),
-  jdFile: document.getElementById("jdFile"),
-  status: document.getElementById("status"),
-  atsScore: document.getElementById("atsScore"),
-  selectedCounts: document.getElementById("selectedCounts"),
-  resumePreview: document.getElementById("resumePreview"),
-  latexOutput: document.getElementById("latexOutput"),
-  analysisOutput: document.getElementById("analysisOutput"),
-  downloadTexBtn: document.getElementById("downloadTexBtn"),
-  copyLatexBtn: document.getElementById("copyLatexBtn"),
-  downloadJsonBtn: document.getElementById("downloadJsonBtn"),
-  printBtn: document.getElementById("printBtn"),
-  overleafBtn: document.getElementById("overleafBtn"),
-  mainOverleafBtn: document.getElementById("mainOverleafBtn"),
-  educationContainer: document.getElementById("educationContainer"),
-  experienceContainer: document.getElementById("experienceContainer"),
-  patentContainer: document.getElementById("patentContainer"),
-  projectsContainer: document.getElementById("projectsContainer"),
-  certificatesContainer: document.getElementById("certificatesContainer"),
-  achievementsContainer: document.getElementById("achievementsContainer")
-};
+// Overleaf Live Editor Controller
+let editor;
+let compileDebounceTimeout;
+let saveIndicatorTimeout;
+let formSyncDebounceTimeout;
 
-let latestLatex = "";
-let latestJson = null;
-let currentStep = 1;
-
-// Auth states
-let token = localStorage.getItem("token") || null;
-let username = localStorage.getItem("username") || null;
-let isRegisterMode = false;
-let tagDragSrcEl = null;
-
-// Consolidated Multi-Page Draft Memory
-let draftData = {
-  jobTitle: "",
-  projectCount: 3,
-  certificateCount: 3,
-  achievementCount: 3,
-  skillsPerCategory: 6,
-  name: "",
-  email: "",
-  phone: "",
-  github: "",
-  linkedin: "",
-  leetcode: "",
-  education: [],
-  experience: [],
-  patents: [],
-  projects: [],
-  certificates: [],
-  achievements: [],
-  skills: {
-    languages: "",
-    frameworks: "",
-    databases: "",
-    tools: "",
-    core: ""
+// Application State
+let state = {
+  projectName: "My LaTeX Document",
+  activeFile: "resume.tex",
+  files: {
+    "resume.tex": ""
   },
-  jobDescription: ""
+  zoom: 0.95,
+  autoCompile: true,
+  fontSize: "14px",
+  editorTheme: "dracula",
+  lineWrapping: true,
+  activeTab: "form",
+  pageBudget: "auto",
+  compactness: "normal",
+  sectionSpacing: "-15pt",
+  sectionOrder: ["education", "experience", "projects", "certificates", "skills"]
 };
 
-const STEP_INFO = {
-  1: { title: "Create Profile", subtitle: "Provide your base credentials and academic history." },
-  2: { title: "Experience & Credentials", subtitle: "Highlight your internships, scientific papers, and projects." },
-  3: { title: "Job Target & AI Optimization", subtitle: "Paste the job description and trigger neural resume mapping." },
-  4: { title: "Optimized Resume Output", subtitle: "Download, copy, or print your tailored LaTeX document." },
-  5: { title: "ATS Refinement Dashboard", subtitle: "Directly toggle project inclusions, manage certificates, and resolve missing skills in real-time." }
+// Default Form Data Sets: Pinned to Jake's Resume format
+const TEMPLATE_FORM_DATA = {
+  jakes_resume: {
+    name: "Jake Ryan",
+    email: "jake@su.edu",
+    phone: "123-456-7890",
+    github: "https://github.com/jake",
+    linkedin: "https://linkedin.com/in/jake",
+    leetcode: "",
+    education: [
+      { institution: "Southwestern University", location: "Georgetown, TX", degree: "Bachelor of Arts in Computer Science, Minor in Business", duration: "Aug. 2018 -- May 2021" },
+      { institution: "Blinn College", location: "Bryan, TX", degree: "Associate's in Liberal Arts", duration: "Aug. 2014 -- May 2018" }
+    ],
+    experience: [
+      {
+        company: "Texas A&M University",
+        location: "College Station, TX",
+        role: "Undergraduate Research Assistant",
+        duration: "June 2020 -- Present",
+        bullets: [
+          "Developed a REST API using FastAPI and PostgreSQL to store data from learning management systems",
+          "Developed a full-stack web application using Flask, React, PostgreSQL and Docker to analyze GitHub data",
+          "Explored ways to visualize GitHub collaboration in a classroom setting"
+        ]
+      },
+      {
+        company: "Southwestern University",
+        location: "Georgetown, TX",
+        role: "Information Technology Support Specialist",
+        duration: "Sep. 2018 -- Present",
+        bullets: [
+          "Communicate with managers to set up campus computers used on campus",
+          "Assess and troubleshoot computer problems brought by students, faculty and staff",
+          "Maintain upkeep of computers, classroom equipment, and 200 printers across campus"
+        ]
+      },
+      {
+        company: "Southwestern University",
+        location: "Georgetown, TX",
+        role: "Artificial Intelligence Research Assistant",
+        duration: "May 2019 -- July 2019",
+        bullets: [
+          "Explored methods to generate video game dungeons based off of The Legend of Zelda",
+          "Developed a game in Java to test the generated dungeons",
+          "Contributed 50K+ lines of code to an established codebase via Git",
+          "Conducted a human subject study to determine which video game dungeon generation technique is enjoyable",
+          "Wrote an 8-page paper and gave multiple presentations on-campus",
+          "Presented virtually to the World Conference on Computational Intelligence"
+        ]
+      }
+    ],
+    projects: [
+      {
+        title: "Gitlytics",
+        technologies: "Python, Flask, React, PostgreSQL, Docker",
+        date: "June 2020 -- Present",
+        bullets: [
+          "Developed a full-stack web application using with Flask serving a REST API with React as the frontend",
+          "Implemented GitHub OAuth to get data from user’s repositories",
+          "Visualized GitHub data to show collaboration",
+          "Used Celery and Redis for asynchronous tasks"
+        ]
+      },
+      {
+        title: "Simple Paintball",
+        technologies: "Spigot API, Java, Maven, TravisCI, Git",
+        date: "May 2018 -- May 2020",
+        bullets: [
+          "Developed a Minecraft server plugin to entertain kids during free time for a previous job",
+          "Published plugin to websites gaining 2K+ downloads and an average 4.5/5-star review",
+          "Implemented continuous delivery using TravisCI to build the plugin upon new a release",
+          "Collaborated with Minecraft server administrators to suggest features and get feedback about the plugin"
+        ]
+      }
+    ],
+    certificates: [
+      { title: "AWS Certified Solutions Architect", issuer: "Amazon Web Services", date: "Jan. 2021" }
+    ],
+    skills: [
+      { label: "Languages", value: "Java, Python, C/C++, SQL (Postgres), JavaScript, HTML/CSS, R" },
+      { label: "Frameworks", value: "React, Node.js, Flask, JUnit, WordPress, Material-UI, FastAPI" },
+      { label: "Developer Tools", value: "Git, Docker, TravisCI, Google Cloud Platform, VS Code, Visual Studio, PyCharm, IntelliJ, Eclipse" },
+      { label: "Libraries", value: "pandas, NumPy, Matplotlib" }
+    ]
+  }
 };
 
-// Auto-resolve active step based on pathname
-const path = window.location.pathname;
-if (path.includes("experience.html")) {
-  currentStep = 2;
-} else if (path.includes("ai.html")) {
-  currentStep = 3;
-} else if (path.includes("output.html")) {
-  currentStep = 4;
-} else if (path.includes("analysis.html")) {
-  currentStep = 5;
-} else {
-  currentStep = 1;
-}
+// Current Active Form Data State
+let formData = JSON.parse(JSON.stringify(TEMPLATE_FORM_DATA.jakes_resume));
 
-init();
+// UI Elements
+const els = {
+  projectTitleInput: document.getElementById("projectTitleInput"),
+  compileStatusBadge: document.getElementById("compileStatusBadge"),
+  recompileBtn: document.getElementById("recompileBtn"),
+  downloadTexBtn: document.getElementById("downloadTexBtn"),
+  printPdfBtn: document.getElementById("printPdfBtn"),
+  copyCodeBtn: document.getElementById("copyCodeBtn"),
+  themeToggleBtn: document.getElementById("themeToggleBtn"),
+  templateSelect: document.getElementById("templateSelect"),
+  newFileBtn: document.getElementById("newFileBtn"),
+  fileTreeContainer: document.getElementById("fileTreeContainer"),
+  aiPromptTextarea: document.getElementById("aiPromptTextarea"),
+  geminiApiKeyInput: document.getElementById("geminiApiKeyInput"),
+  aiPolishBtn: document.getElementById("aiPolishBtn"),
+  sidebarPane: document.getElementById("sidebarPane"),
+  editorPane: document.getElementById("editorPane"),
+  previewPane: document.getElementById("previewPane"),
+  sidebarResizer: document.getElementById("sidebarResizer"),
+  editorPreviewResizer: document.getElementById("editorPreviewResizer"),
+  compiledMetaText: document.getElementById("compiledMetaText"),
+  autoCompileToggle: document.getElementById("autoCompileToggle"),
+  zoomOutBtn: document.getElementById("zoomOutBtn"),
+  zoomPercentText: document.getElementById("zoomPercentText"),
+  zoomInBtn: document.getElementById("zoomInBtn"),
+  resumeSheet: document.getElementById("resumeSheet"),
+  compiledContentContainer: document.getElementById("compiledContentContainer"),
+  compileLogPanel: document.getElementById("compileLogPanel"),
+  editorCursorPosition: document.getElementById("editorCursorPosition"),
+  documentStatsText: document.getElementById("documentStatsText"),
+  
+  // Workspace Settings
+  fontSizeSelect: document.getElementById("fontSizeSelect"),
+  editorThemeSelect: document.getElementById("editorThemeSelect"),
+  lineWrappingCheckbox: document.getElementById("lineWrappingCheckbox"),
+  pageBudgetSelect: document.getElementById("pageBudgetSelect"),
+  compactnessSelect: document.getElementById("compactnessSelect"),
+  sectionSpacingSelect: document.getElementById("sectionSpacingSelect"),
 
-function init() {
-  // Force scroll to top on page load/navigation and disable cached scroll position restoration
-  if ('scrollRestoration' in history) {
-    history.scrollRestoration = 'manual';
-  }
-  window.scrollTo(0, 0);
+  // Tab Switching
+  tabFormBtn: document.getElementById("tabFormBtn"),
+  tabCodeBtn: document.getElementById("tabCodeBtn"),
+  formEditorContent: document.getElementById("formEditorContent"),
+  codeEditorContent: document.getElementById("codeEditorContent"),
 
-  // Load existing draft memory from localStorage
-  const savedDraft = localStorage.getItem("draftResumeData");
-  if (savedDraft) {
-    try {
-      draftData = { ...draftData, ...JSON.parse(savedDraft) };
-    } catch (err) {
-      console.error("Failed to load draft data:", err);
-    }
-  }
+  // Form Fields: Profile Details
+  formName: document.getElementById("formName"),
+  formEmail: document.getElementById("formEmail"),
+  formPhone: document.getElementById("formPhone"),
+  formGithub: document.getElementById("formGithub"),
+  formLinkedin: document.getElementById("formLinkedin"),
+  formLeetcode: document.getElementById("formLeetcode"),
 
-  // Populate dynamic form settings if present
-  if (elements.apiKey) {
-    elements.apiKey.value = localStorage.getItem("geminiApiKey") || "";
-  }
-  if (elements.modelName) {
-    elements.modelName.value = localStorage.getItem("geminiModel") || "gemini-2.5-flash";
-  }
-  document.body.classList.toggle("dark", localStorage.getItem("theme") === "dark");
+  // Form List Containers & Buttons
+  formEducationContainer: document.getElementById("formEducationContainer"),
+  formAddEduBtn: document.getElementById("formAddEduBtn"),
+  formExperienceContainer: document.getElementById("formExperienceContainer"),
+  formAddExpBtn: document.getElementById("formAddExpBtn"),
+  formProjectsContainer: document.getElementById("formProjectsContainer"),
+  formAddProjBtn: document.getElementById("formAddProjBtn"),
+  
+  formCertificatesContainer: document.getElementById("formCertificatesContainer"),
+  formAddCertBtn: document.getElementById("formAddCertBtn"),
+  
+  formSkillsContainer: document.getElementById("formSkillsContainer"),
+  formAddSkillBtn: document.getElementById("formAddSkillBtn"),
+  
+  // Autosave status
+  autosaveBadge: document.getElementById("autosaveBadge")
+};
 
-  // Bind Form Save Triggers
-  if (elements.form) {
-    elements.form.addEventListener("input", saveDraftToLocal);
-    elements.form.addEventListener("submit", handleAiGenerate);
-  }
+// Initialize Application
+document.addEventListener("DOMContentLoaded", () => {
+  initEditor();
+  initResizers();
+  initTabs();
+  initAccordions();
+  loadProjectData();
+  initDraggableAccordions();
+  bindEvents();
+});
 
-  if (elements.saveApiKeyBtn) elements.saveApiKeyBtn.addEventListener("click", saveApiKey);
-  if (elements.clearApiKeyBtn) elements.clearApiKeyBtn.addEventListener("click", clearApiKey);
-  if (elements.modelName) {
-    elements.modelName.addEventListener("change", () => localStorage.setItem("geminiModel", elements.modelName.value));
-  }
-  if (elements.generateLocalBtn) elements.generateLocalBtn.addEventListener("click", handleLocalGenerate);
-  if (elements.loadSampleBtn) elements.loadSampleBtn.addEventListener("click", loadSampleData);
-  if (elements.clearFormBtn) elements.clearFormBtn.addEventListener("click", clearForm);
-  if (elements.themeToggle) elements.themeToggle.addEventListener("click", toggleTheme);
-  if (elements.jdFile) elements.jdFile.addEventListener("change", handleJdFileUpload);
-  if (elements.downloadTexBtn) elements.downloadTexBtn.addEventListener("click", downloadTex);
-  if (elements.copyLatexBtn) elements.copyLatexBtn.addEventListener("click", copyLatex);
-  if (elements.downloadJsonBtn) elements.downloadJsonBtn.addEventListener("click", downloadJson);
-  if (elements.printBtn) elements.printBtn.addEventListener("click", () => window.print());
-  if (elements.overleafBtn) elements.overleafBtn.addEventListener("click", openInOverleaf);
-  if (elements.mainOverleafBtn) elements.mainOverleafBtn.addEventListener("click", openInOverleaf);
-
-  if (document.getElementById("addEducationBtn")) {
-    document.getElementById("addEducationBtn").addEventListener("click", () => { addEducation(); saveDraftToLocal(); });
-  }
-  if (document.getElementById("addExperienceBtn")) {
-    document.getElementById("addExperienceBtn").addEventListener("click", () => { addExperience(); saveDraftToLocal(); });
-  }
-  if (document.getElementById("addPatentBtn")) {
-    document.getElementById("addPatentBtn").addEventListener("click", () => { addPatent(); saveDraftToLocal(); });
-  }
-  if (document.getElementById("addProjectBtn")) {
-    document.getElementById("addProjectBtn").addEventListener("click", () => { addProject(); saveDraftToLocal(); });
-  }
-  if (document.getElementById("addCertificateBtn")) {
-    document.getElementById("addCertificateBtn").addEventListener("click", () => { addCertificate(); saveDraftToLocal(); });
-  }
-  if (document.getElementById("addAchievementBtn")) {
-    document.getElementById("addAchievementBtn").addEventListener("click", () => { addAchievement(); saveDraftToLocal(); });
-  }
-
-  if (document.querySelectorAll(".tab")) {
-    document.querySelectorAll(".tab").forEach(button => {
-      button.addEventListener("click", () => {
-        if (button.dataset.tab === "analysis" && !window.location.pathname.includes("analysis.html")) {
-          window.location.href = "analysis.html";
-        } else {
-          activateTab(button.dataset.tab);
-        }
-      });
-    });
-  }
-
-  // Setup Wizard Elements
-  elements.nextBtn = document.getElementById("nextBtn");
-  elements.prevBtn = document.getElementById("prevBtn");
-  elements.wizardSteps = document.querySelectorAll(".wizard-step");
-  elements.wizardNav = document.getElementById("wizardNav");
-  elements.menuItems = document.querySelectorAll(".menu-item");
-  elements.feedTitle = document.getElementById("feedTitle");
-  elements.feedSubtitle = document.getElementById("feedSubtitle");
-  elements.avatarImg = document.getElementById("avatarImg");
-  elements.scoreCircle = document.getElementById("scoreCircle");
-
-  if (elements.nextBtn) elements.nextBtn.addEventListener("click", handleNextStep);
-  if (elements.prevBtn) elements.prevBtn.addEventListener("click", handlePrevStep);
-
-  // Auth Elements Caching
-  elements.authModal = document.getElementById("authModal");
-  elements.authModalBtn = document.getElementById("authModalBtn");
-  elements.closeAuthModal = document.getElementById("closeAuthModal");
-  elements.logoutBtn = document.getElementById("logoutBtn");
-  elements.userStatusText = document.getElementById("userStatusText");
-  elements.userBadge = document.getElementById("userBadge");
-  elements.authForm = document.getElementById("authForm");
-  elements.authUsername = document.getElementById("authUsername");
-  elements.authPassword = document.getElementById("authPassword");
-  elements.authSubmitBtn = document.getElementById("authSubmitBtn");
-  elements.authModalTitle = document.getElementById("authModalTitle");
-  elements.toggleAuthMode = document.getElementById("toggleAuthMode");
-  elements.authError = document.getElementById("authError");
-  elements.authSuccess = document.getElementById("authSuccess");
-  elements.saveProfileBtn = document.getElementById("saveProfileBtn");
-
-  // Auth Events
-  if (elements.authModalBtn) elements.authModalBtn.addEventListener("click", openAuthModal);
-  if (elements.closeAuthModal) elements.closeAuthModal.addEventListener("click", closeAuthModalPanel);
-  if (elements.toggleAuthMode) {
-    elements.toggleAuthMode.addEventListener("click", (e) => {
-      e.preventDefault();
-      toggleMode();
-    });
-  }
-  if (elements.authForm) elements.authForm.addEventListener("submit", handleAuthSubmit);
-  if (elements.logoutBtn) elements.logoutBtn.addEventListener("click", handleLogout);
-  if (elements.saveProfileBtn) elements.saveProfileBtn.addEventListener("click", saveProfileToDb);
-
-  // Populate draft values to DOM
-  populateFormFields(draftData);
-
-  // Add default dynamic card blocks if containers are blank
-  if (elements.educationContainer && elements.educationContainer.children.length === 0) addEducation();
-  if (elements.experienceContainer && elements.experienceContainer.children.length === 0) addExperience();
-  if (elements.patentContainer && elements.patentContainer.children.length === 0) addPatent();
-  if (elements.projectsContainer && elements.projectsContainer.children.length === 0) addProject();
-  if (elements.certificatesContainer && elements.certificatesContainer.children.length === 0) addCertificate();
-  if (elements.achievementsContainer && elements.achievementsContainer.children.length === 0) addAchievement();
-
-  // If on Output page or ATS Tuning page, restore last results
-  if (currentStep === 4 || currentStep === 5) {
-    loadLatestResultFromLocal();
-  }
-
-  checkAuthState();
-  updateStepperUI();
-  setupInteractiveSkillsEditor();
-
-  // Auto fast-forward to step 3 on index.html if name & email are pre-filled
-  const isIndexPage = path.includes("index.html") || path.endsWith("/") || path === "";
-  if (currentStep === 1 && isIndexPage && draftData.name && draftData.email) {
-    setTimeout(() => {
-      window.location.href = "ai.html";
-    }, 100);
-  }
-}
-
-function handleNextStep() {
-  if (currentStep === 1) {
-    const nameInput = document.getElementById("name");
-    const emailInput = document.getElementById("email");
-    if (!nameInput.checkValidity() || !emailInput.checkValidity()) {
-      elements.form.reportValidity();
-      return;
-    }
-    window.location.href = "experience.html";
-  } else if (currentStep === 2) {
-    window.location.href = "ai.html";
-  }
-}
-
-function handlePrevStep() {
-  if (currentStep === 2) {
-    window.location.href = "index.html";
-  } else if (currentStep === 3) {
-    window.location.href = "experience.html";
-  } else if (currentStep === 4) {
-    window.location.href = "ai.html";
-  }
-}
-
-function updateStepperUI() {
-  elements.menuItems.forEach((indicator, i) => {
-    const stepNum = i + 1;
-    indicator.classList.toggle("active", stepNum === currentStep);
+// 1. CodeMirror Editor Setup
+function initEditor() {
+  editor = CodeMirror.fromTextArea(document.getElementById("latexCodeArea"), {
+    mode: "stex",
+    theme: "dracula",
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    lineWrapping: true,
+    indentUnit: 2,
+    tabSize: 2,
+    placeholder: "% Write your LaTeX document here..."
   });
 
-  if (STEP_INFO[currentStep] && elements.feedTitle) {
-    elements.feedTitle.textContent = STEP_INFO[currentStep].title;
-    elements.feedSubtitle.textContent = STEP_INFO[currentStep].subtitle;
-  }
+  editor.on("cursorActivity", () => {
+    const pos = editor.getCursor();
+    els.editorCursorPosition.textContent = `Ln ${pos.line + 1}, Col ${pos.ch + 1}`;
+    state.lastCursorLine = pos.line;
+  });
 
-  if (!elements.prevBtn || !elements.nextBtn || !elements.wizardNav) return;
-
-  if (currentStep === 1) {
-    elements.prevBtn.style.visibility = "hidden";
-    elements.nextBtn.style.visibility = "visible";
-    elements.nextBtn.textContent = "Next: Exp & Projects \u2192";
-    elements.wizardNav.style.display = "flex";
-  } else if (currentStep === 2) {
-    elements.prevBtn.style.visibility = "visible";
-    elements.prevBtn.textContent = "\u2190 Back";
-    elements.nextBtn.style.visibility = "visible";
-    elements.nextBtn.textContent = "Next: AI & Job Target \u2192";
-    elements.wizardNav.style.display = "flex";
-  } else if (currentStep === 3) {
-    elements.prevBtn.style.visibility = "visible";
-    elements.prevBtn.textContent = "\u2190 Back";
-    elements.nextBtn.style.visibility = "hidden";
-    elements.wizardNav.style.display = "flex";
-  } else if (currentStep === 4) {
-    elements.prevBtn.style.visibility = "visible";
-    elements.prevBtn.textContent = "\u2190 Edit Inputs";
-    elements.nextBtn.style.visibility = "hidden";
-    elements.wizardNav.style.display = "flex";
-  }
-}
-
-// Local Caching Controllers
-function saveDraftToLocal() {
-  const data = collectData();
-  localStorage.setItem("draftResumeData", JSON.stringify(data));
-}
-
-function loadLatestResultFromLocal() {
-  const savedJson = localStorage.getItem("latestResumeResultData");
-  const savedLatex = localStorage.getItem("latestResumeLatex");
-  if (savedJson && savedLatex) {
-    try {
-      const data = JSON.parse(savedJson);
-      latestJson = data;
-      latestLatex = savedLatex;
+  editor.on("change", () => {
+    if (state.activeTab === "code") {
+      state.files[state.activeFile] = editor.getValue();
       
-      if (elements.resumePreview) {
-        elements.resumePreview.classList.remove("empty-state");
-        elements.resumePreview.innerHTML = buildHtmlPreview(data.input, data.resume);
-      }
-      if (elements.latexOutput) elements.latexOutput.textContent = latestLatex;
-      if (elements.analysisOutput) elements.analysisOutput.innerHTML = buildAnalysisHtml(data.resume);
-      
-      const score = data.resume.atsScore || 0;
-      if (elements.atsScore) elements.atsScore.textContent = `${score}%`;
-      
-      if (elements.scoreCircle) {
-        elements.scoreCircle.className = "circle-progress-wrapper";
-        if (score >= 80) {
-          elements.scoreCircle.classList.add("high-score");
-        } else if (score >= 60) {
-          elements.scoreCircle.classList.add("med-score");
+      // Debounce the back-sync to forms to prevent typing lag
+      clearTimeout(formSyncDebounceTimeout);
+      formSyncDebounceTimeout = setTimeout(() => {
+        saveDraftLocal();
+        const parsedData = parseLatexToForm(editor.getValue());
+        if (parsedData) {
+          formData = parsedData;
+          localStorage.setItem("overleaf_form_data_v6", JSON.stringify(formData));
+          initForms();
         }
+      }, 500);
+      
+      if (state.autoCompile) {
+        clearTimeout(compileDebounceTimeout);
+        compileDebounceTimeout = setTimeout(compileLatex, 400);
       }
-      if (elements.selectedCounts) {
-        elements.selectedCounts.textContent = `${(data.resume.selectedProjects || []).length} Projects / ${(data.resume.selectedCertificates || []).length} Certificates Selected`;
-      }
-    } catch (err) {
-      console.error("Failed to load last result:", err);
     }
-  }
-}
+  });
 
-// Authentication Logic
-function checkAuthState() {
-  token = localStorage.getItem("token");
-  username = localStorage.getItem("username");
-
-  if (!elements.userStatusText || !elements.avatarImg || !elements.userBadge) return;
-
-  if (token && username) {
-    elements.userStatusText.textContent = username;
-    elements.avatarImg.textContent = username.substring(0, 2).toUpperCase();
-    elements.avatarImg.style.background = "var(--ig-gradient)";
-    elements.avatarImg.style.color = "#ffffff";
-    
-    elements.userBadge.classList.add("logged-in");
-    if (elements.authModalBtn) elements.authModalBtn.style.display = "none";
-    if (elements.logoutBtn) elements.logoutBtn.style.display = "inline-block";
-    if (elements.saveProfileBtn) elements.saveProfileBtn.style.display = "inline-block";
-    
-    // Auto fetch profile if none is currently loaded
-    if (!localStorage.getItem("draftResumeData")) {
-      fetchProfileFromDb();
+  editor.on("inputRead", (cm, change) => {
+    if (change.text[0] === "\\") {
+      showAutocomplete(cm);
     }
-  } else {
-    elements.userStatusText.textContent = "Guest Mode";
-    elements.avatarImg.textContent = "G";
-    elements.avatarImg.style.background = "var(--secondary)";
-    elements.avatarImg.style.color = "var(--text)";
-
-    elements.userBadge.classList.remove("logged-in");
-    if (elements.authModalBtn) elements.authModalBtn.style.display = "inline-block";
-    if (elements.logoutBtn) elements.logoutBtn.style.display = "none";
-    if (elements.saveProfileBtn) elements.saveProfileBtn.style.display = "none";
-  }
+  });
 }
 
-function openAuthModal() {
-  isRegisterMode = false;
-  elements.authModalTitle.textContent = "Sign In";
-  elements.authSubmitBtn.textContent = "Sign In";
-  elements.toggleAuthMode.textContent = "Create one now";
-  elements.authError.style.display = "none";
-  elements.authSuccess.style.display = "none";
-  elements.authForm.reset();
-  elements.authModal.style.display = "grid";
-}
-
-function closeAuthModalPanel() {
-  elements.authModal.style.display = "none";
-}
-
-function toggleMode() {
-  isRegisterMode = !isRegisterMode;
-  elements.authError.style.display = "none";
-  elements.authSuccess.style.display = "none";
+function showAutocomplete(cm) {
+  const initialCursor = cm.getCursor();
+  const suggestionsBox = document.createElement("ul");
+  suggestionsBox.className = "autocomplete-suggestions";
   
-  if (isRegisterMode) {
-    elements.authModalTitle.textContent = "Register Account";
-    elements.authSubmitBtn.textContent = "Register";
-    elements.toggleAuthMode.textContent = "Sign in here";
+  const coords = cm.charCoords(initialCursor, "window");
+  suggestionsBox.style.left = `${coords.left}px`;
+  suggestionsBox.style.top = `${coords.bottom}px`;
+  document.body.appendChild(suggestionsBox);
+
+  let activeIndex = 0;
+  let currentFilteredList = [];
+
+  function renderSuggestions(filterText = "") {
+    suggestionsBox.innerHTML = "";
+    currentFilteredList = LATEX_COMMANDS.filter(cmd => cmd.toLowerCase().startsWith(filterText.toLowerCase()));
+    
+    if (currentFilteredList.length === 0) {
+      closeSuggestions();
+      return;
+    }
+    
+    currentFilteredList.forEach((cmd, index) => {
+      const item = document.createElement("li");
+      item.className = `autocomplete-suggestion ${index === activeIndex ? "active" : ""}`;
+      item.textContent = `\\${cmd}`;
+      item.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        insertCommand(cmd);
+      });
+      suggestionsBox.appendChild(item);
+    });
+  }
+
+  function insertCommand(cmd) {
+    const currentCursor = cm.getCursor();
+    const lineText = cm.getLine(currentCursor.line);
+    const lastSlash = lineText.lastIndexOf("\\", currentCursor.ch - 1);
+    
+    if (lastSlash !== -1) {
+      cm.replaceRange("\\" + cmd, { line: currentCursor.line, ch: lastSlash }, currentCursor);
+      if (cmd.includes("{}")) {
+        const braceIndex = cmd.indexOf("{");
+        cm.setCursor({ line: currentCursor.line, ch: lastSlash + 1 + braceIndex + 1 });
+      }
+    }
+    cm.focus();
+    closeSuggestions();
+  }
+
+  function updateActiveSuggestion() {
+    const items = suggestionsBox.querySelectorAll(".autocomplete-suggestion");
+    items.forEach((item, index) => {
+      if (index === activeIndex) {
+        item.classList.add("active");
+        item.scrollIntoView({ block: "nearest" });
+      } else {
+        item.classList.remove("active");
+      }
+    });
+  }
+
+  function onEditorChange() {
+    const currentCursor = cm.getCursor();
+    const lineText = cm.getLine(currentCursor.line);
+    const lastSlash = lineText.lastIndexOf("\\", currentCursor.ch - 1);
+    
+    if (lastSlash === -1 || currentCursor.ch < lastSlash) {
+      closeSuggestions();
+      return;
+    }
+    
+    const query = lineText.slice(lastSlash + 1, currentCursor.ch);
+    if (/[^a-zA-Z0-9_{}]/.test(query)) {
+      closeSuggestions();
+      return;
+    }
+    activeIndex = 0;
+    renderSuggestions(query);
+  }
+
+  function closeSuggestions() {
+    suggestionsBox.remove();
+    cm.off("change", onEditorChange);
+    document.removeEventListener("mousedown", outsideClickHandler);
+    document.removeEventListener("keydown", keydownHandler);
+  }
+
+  function outsideClickHandler(e) {
+    if (!suggestionsBox.contains(e.target)) {
+      closeSuggestions();
+    }
+  }
+
+  function keydownHandler(e) {
+    const items = suggestionsBox.querySelectorAll(".autocomplete-suggestion");
+    if (!items.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      updateActiveSuggestion();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      updateActiveSuggestion();
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      if (currentFilteredList[activeIndex]) {
+        insertCommand(currentFilteredList[activeIndex]);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeSuggestions();
+    }
+  }
+
+  cm.on("change", onEditorChange);
+  document.addEventListener("mousedown", outsideClickHandler);
+  document.addEventListener("keydown", keydownHandler, true);
+  renderSuggestions("");
+}
+
+// 2. Resizers dragging Setup
+function initResizers() {
+  let isDraggingSidebar = false;
+  let isDraggingEditorPreview = false;
+
+  els.sidebarResizer.addEventListener("mousedown", (e) => {
+    isDraggingSidebar = true;
+    els.sidebarResizer.classList.add("active");
+    document.body.style.cursor = "col-resize";
+    e.preventDefault();
+  });
+
+  els.editorPreviewResizer.addEventListener("mousedown", (e) => {
+    isDraggingEditorPreview = true;
+    els.editorPreviewResizer.classList.add("active");
+    document.body.style.cursor = "col-resize";
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (isDraggingSidebar) {
+      const newWidth = e.clientX;
+      if (newWidth > 180 && newWidth < 450) {
+        document.documentElement.style.setProperty("--sidebar-width", `${newWidth}px`);
+      }
+    } else if (isDraggingEditorPreview) {
+      const sidebarWidth = els.sidebarPane.offsetWidth;
+      const workspaceWidth = document.body.offsetWidth;
+      const clientXAdjusted = e.clientX - sidebarWidth - 6;
+      const remainingWidth = workspaceWidth - sidebarWidth - 12;
+      
+      const newWidthPercentage = (clientXAdjusted / remainingWidth) * 100;
+      if (newWidthPercentage > 15 && newWidthPercentage < 85) {
+        els.editorPane.style.flex = `0 0 ${newWidthPercentage}%`;
+        els.previewPane.style.width = `${100 - newWidthPercentage}%`;
+      }
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isDraggingSidebar || isDraggingEditorPreview) {
+      isDraggingSidebar = false;
+      isDraggingEditorPreview = false;
+      els.sidebarResizer.classList.remove("active");
+      els.editorPreviewResizer.classList.remove("active");
+      document.body.style.cursor = "default";
+      editor.refresh();
+    }
+  });
+}
+
+// 3. Tab toggles
+function initTabs() {
+  els.tabFormBtn.addEventListener("click", () => {
+    switchTab("form");
+  });
+
+  els.tabCodeBtn.addEventListener("click", () => {
+    switchTab("code");
+  });
+}
+
+function switchTab(tabId) {
+  if (state.activeTab === tabId) return;
+  state.activeTab = tabId;
+
+  if (tabId === "form") {
+    els.tabFormBtn.classList.add("active");
+    els.tabCodeBtn.classList.remove("active");
+    els.formEditorContent.classList.add("active");
+    els.codeEditorContent.style.display = "none";
+    els.codeEditorContent.classList.remove("active");
+    
+    // Parse current LaTeX code back into Form Data to enable bi-directional sync!
+    const parsedData = parseLatexToForm(editor.getValue());
+    if (parsedData) {
+      formData = parsedData;
+      saveDraftLocal();
+    }
+    
+    loadProjectData();
+    
+    // Automatically scroll to the section corresponding to the last cursor line in code
+    if (state.hasOwnProperty("lastCursorLine")) {
+      syncAccordionToCursorLine(state.lastCursorLine);
+    }
   } else {
-    elements.authModalTitle.textContent = "Sign In";
-    elements.authSubmitBtn.textContent = "Sign In";
-    elements.toggleAuthMode.textContent = "Create one now";
+    els.tabCodeBtn.classList.add("active");
+    els.tabFormBtn.classList.remove("active");
+    els.codeEditorContent.style.display = "flex";
+    els.codeEditorContent.classList.add("active");
+    els.formEditorContent.classList.remove("active");
+    
+    const genLatex = generateLatexFromForm(formData, "jakes_resume", state.compactness, state.sectionOrder);
+    editor.setValue(genLatex);
+    state.files[state.activeFile] = genLatex;
+    saveDraftLocal();
+    editor.refresh();
+    editor.focus();
   }
 }
 
-async function handleAuthSubmit(e) {
-  e.preventDefault();
-  elements.authError.style.display = "none";
-  elements.authSuccess.style.display = "none";
+// Helper: Scroll Accordion Item inside scroll container
+function scrollToAccordionItem(item) {
+  const container = els.formEditorContent;
+  if (!container || !item) return;
+  
+  const containerRect = container.getBoundingClientRect();
+  const itemRect = item.getBoundingClientRect();
+  const relativeTop = itemRect.top - containerRect.top + container.scrollTop;
+  
+  container.scrollTo({
+    top: relativeTop - 12,
+    behavior: "smooth"
+  });
+}
 
-  const usernameVal = elements.authUsername.value.trim();
-  const passwordVal = elements.authPassword.value;
+function getSectionFromLine(lineNum) {
+  if (lineNum === undefined || lineNum === null) return null;
+  const val = editor.getValue();
+  if (!val) return null;
+  const lines = val.split("\n");
+  // Search upwards from the current line for a \section{...} command
+  for (let i = Math.min(lineNum, lines.length - 1); i >= 0; i--) {
+    const match = lines[i].match(/\\section\s*\{([^}]+)\}/);
+    if (match) {
+      return match[1].trim().toLowerCase();
+    }
+  }
+  return null;
+}
 
-  const endpoint = isRegisterMode ? "/api/auth/register" : "/api/auth/login";
+function syncAccordionToCursorLine(lineNum) {
+  const sec = getSectionFromLine(lineNum);
+  if (!sec) return;
+  
+  let index = -1;
+  if (sec.includes("education")) {
+    index = state.sectionOrder.indexOf("education") + 1;
+  } else if (sec.includes("experience")) {
+    index = state.sectionOrder.indexOf("experience") + 1;
+  } else if (sec.includes("project")) {
+    index = state.sectionOrder.indexOf("projects") + 1;
+  } else if (sec.includes("certificate")) {
+    index = state.sectionOrder.indexOf("certificates") + 1;
+  } else if (sec.includes("skills")) {
+    index = state.sectionOrder.indexOf("skills") + 1;
+  }
+  
+  if (index !== -1) {
+    const items = document.querySelectorAll(".accordion-item");
+    items.forEach((item, idx) => {
+      if (idx === index) {
+        if (!item.classList.contains("active")) {
+          // Collapse other sections
+          items.forEach(otherItem => {
+            if (otherItem !== item) otherItem.classList.remove("active");
+          });
+          item.classList.add("active");
+        }
+        setTimeout(() => {
+          scrollToAccordionItem(item);
+        }, 100);
+      }
+    });
+  }
+}
+
+// 4. Collapsible Accordions
+function initAccordions() {
+  const items = document.querySelectorAll(".accordion-item");
+  items.forEach(item => {
+    const header = item.querySelector(".accordion-header");
+    header.addEventListener("click", () => {
+      const wasActive = item.classList.contains("active");
+      
+      // Collapse all other sections to keep the viewport clean
+      items.forEach(otherItem => {
+        if (otherItem !== item) {
+          otherItem.classList.remove("active");
+        }
+      });
+      
+      item.classList.toggle("active");
+      
+      if (!wasActive) {
+        setTimeout(() => {
+          scrollToAccordionItem(item);
+        }, 180);
+      }
+    });
+  });
+}
+
+// 5. Multi-File Inputs Resolver
+function resolveInputs(latex, files, visited = new Set()) {
+  return latex.replace(/\\(?:input|include)\s*\{([^}]+)\}/g, (match, path) => {
+    let cleanPath = path.trim();
+    let pathWithExt = cleanPath.endsWith(".tex") ? cleanPath : cleanPath + ".tex";
+    let pathWithoutExt = cleanPath.endsWith(".tex") ? cleanPath.slice(0, -4) : cleanPath;
+    
+    if (files[pathWithExt] !== undefined) {
+      if (visited.has(pathWithExt)) {
+        return `% Circular dependency: ${pathWithExt}`;
+      }
+      const nextVisited = new Set(visited);
+      nextVisited.add(pathWithExt);
+      return resolveInputs(files[pathWithExt], files, nextVisited);
+    } else if (files[pathWithoutExt] !== undefined) {
+      if (visited.has(pathWithoutExt)) {
+        return `% Circular dependency: ${pathWithoutExt}`;
+      }
+      const nextVisited = new Set(visited);
+      nextVisited.add(pathWithoutExt);
+      return resolveInputs(files[pathWithoutExt], files, nextVisited);
+    }
+    
+    return match;
+  });
+}
+
+// 6. Client Side LaTeX Compilation
+function compileLatex() {
+  els.compileStatusBadge.className = "compile-status-badge working";
+  els.compileStatusBadge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compiling...';
+  
+  const rawLatex = editor.getValue();
+  const resolvedLatex = resolveInputs(rawLatex, state.files);
   
   try {
-    elements.authSubmitBtn.disabled = true;
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: usernameVal, password: passwordVal })
-    });
-
-    const data = await res.json();
+    const htmlResult = compileLatexToHtml(resolvedLatex);
     
-    if (!res.ok) {
-      throw new Error(data.error || "An authentication error occurred.");
-    }
-
-    if (isRegisterMode) {
-      elements.authSuccess.textContent = data.message;
-      elements.authSuccess.style.display = "block";
-      setTimeout(() => {
-        toggleMode();
-        elements.authUsername.value = usernameVal;
-      }, 1500);
+    if (htmlResult.includes("compile-error")) {
+      els.compiledContentContainer.innerHTML = "";
+      els.compileLogPanel.innerHTML = htmlResult;
+      els.compileLogPanel.classList.add("open");
+      els.compileStatusBadge.className = "compile-status-badge error";
+      els.compileStatusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Error';
+      els.compiledMetaText.textContent = "Compilation failed";
     } else {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("username", data.username);
-      closeAuthModalPanel();
-      checkAuthState();
-      showStatus("Logged in successfully. Fetching saved profile.", false, true);
-    }
-  } catch (err) {
-    elements.authError.textContent = err.message;
-    elements.authError.style.display = "block";
-  } finally {
-    elements.authSubmitBtn.disabled = false;
-  }
-}
-
-function handleLogout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("username");
-  localStorage.removeItem("draftResumeData");
-  localStorage.removeItem("latestResumeResultData");
-  localStorage.removeItem("latestResumeLatex");
-  clearForm(true);
-  checkAuthState();
-  showStatus("Logged out successfully.");
-}
-
-async function fetchProfileFromDb() {
-  if (!token) return;
-  
-  try {
-    const res = await fetch("/api/profile", {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-    const data = await res.json();
-    
-    if (res.ok && data.profile) {
-      draftData = { ...draftData, ...data.profile };
-      localStorage.setItem("draftResumeData", JSON.stringify(draftData));
-      populateFormFields(draftData);
-      showStatus("Successfully loaded saved profile from SQLite database.", false, true);
+      // Temporarily remove budget classes to measure the true unclipped content scrollHeight
+      const currentBudget = state.pageBudget || "auto";
+      els.resumeSheet.classList.remove("page-budget-1", "page-budget-2");
       
-      // Auto-routing if data is filled
-      if (draftData.name && draftData.email && currentStep === 1) {
-        window.location.href = "ai.html";
+      els.compiledContentContainer.innerHTML = htmlResult;
+      
+      const height = els.resumeSheet.scrollHeight;
+      const pageCount = Math.max(1, Math.ceil(height / 1122));
+      
+      // Re-apply spacing & budget classes
+      applySpacingClasses();
+      
+      els.compileLogPanel.innerHTML = "";
+      els.compileLogPanel.classList.remove("open");
+      els.compileStatusBadge.className = "compile-status-badge success";
+      els.compileStatusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Compiled';
+      
+      const textOnly = els.compiledContentContainer.innerText || "";
+      const words = textOnly.trim() === "" ? 0 : textOnly.trim().split(/\s+/).length;
+      const chars = textOnly.length;
+      els.documentStatsText.textContent = `${words} words, ${chars} characters`;
+      
+      // Check if page budget is exceeded
+      if (currentBudget !== "auto" && pageCount > parseInt(currentBudget)) {
+        els.compiledMetaText.innerHTML = `<span style="color:#ef4444; font-weight:600;"><i class="fas fa-exclamation-triangle"></i> Exceeds ${currentBudget}-page limit! (${pageCount} pages)</span>`;
+        els.resumeSheet.classList.add("budget-exceeded");
+      } else {
+        els.compiledMetaText.textContent = `Page 1 of ${pageCount}`;
+        els.resumeSheet.classList.remove("budget-exceeded");
       }
     }
   } catch (err) {
-    console.error("Failed to fetch profile:", err);
+    console.error(err);
+    els.compileStatusBadge.className = "compile-status-badge error";
+    els.compileStatusBadge.innerHTML = '<i class="fas fa-times-circle"></i> Crash';
+    els.compileLogPanel.innerHTML = `<div class="compile-error"><strong>Parser Error:</strong> ${err.message}</div>`;
+    els.compileLogPanel.classList.add("open");
   }
 }
 
-async function saveProfileToDb() {
-  if (!token) return showStatus("You must be logged in to save details.", true);
+// Helper: Swap Array Items
+function swapItems(arr, i1, i2) {
+  if (i1 < 0 || i1 >= arr.length || i2 < 0 || i2 >= arr.length) return;
+  const temp = arr[i1];
+  arr[i1] = arr[i2];
+  arr[i2] = temp;
+}
+
+// 7. Visual Forms Sync & rendering
+function initForms() {
+  const textBindings = [
+    { el: els.formName, field: "name" },
+    { el: els.formEmail, field: "email" },
+    { el: els.formPhone, field: "phone" },
+    { el: els.formGithub, field: "github" },
+    { el: els.formLinkedin, field: "linkedin" },
+    { el: els.formLeetcode, field: "leetcode" }
+  ];
+
+  textBindings.forEach(binding => {
+    if (binding.el) {
+      binding.el.value = formData[binding.field] || "";
+      binding.el.oninput = () => {
+        formData[binding.field] = binding.el.value;
+        syncFormToEditor();
+      };
+    }
+  });
+
+  renderDynamicAccordions();
+}
+
+function syncFormToEditor() {
+  const genLatex = generateLatexFromForm(formData, "jakes_resume", state.compactness, state.sectionOrder, state.sectionSpacing);
   
-  saveDraftToLocal();
+  editor.setValue(genLatex);
+  state.files[state.activeFile] = genLatex;
+  saveDraftLocal();
   
-  try {
-    elements.saveProfileBtn.disabled = true;
-    const res = await fetch("/api/profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ profile: draftData })
+  if (state.autoCompile) {
+    if (state.activeTab === "form") {
+      compileLatex();
+    } else {
+      clearTimeout(compileDebounceTimeout);
+      compileDebounceTimeout = setTimeout(compileLatex, 400);
+    }
+  }
+}
+
+function makeCardCollapsible(card, itemData) {
+  const header = card.querySelector(".form-card-header");
+  if (!header) return;
+  
+  header.style.cursor = "pointer";
+  
+  // Add collapse icon in front of the title span
+  const titleSpan = card.querySelector(".form-card-title");
+  if (titleSpan && !titleSpan.querySelector(".toggle-card-icon")) {
+    const icon = document.createElement("i");
+    icon.className = "fas fa-chevron-right toggle-card-icon";
+    icon.style.cssText = "margin-right: 8px; transition: transform 0.2s; color: var(--text-muted); font-size: 0.75rem;";
+    titleSpan.insertBefore(icon, titleSpan.firstChild);
+  }
+  
+  // Apply initial expanded state
+  if (itemData) {
+    if (itemData._expanded || itemData._justAdded) {
+      card.classList.add("expanded");
+      itemData._expanded = true;
+      delete itemData._justAdded;
+    } else {
+      card.classList.remove("expanded");
+    }
+  }
+  
+  header.onclick = (e) => {
+    // Prevent collapsing when clicking on control buttons or inside actions container
+    if (e.target.closest(".form-card-delete-btn") || e.target.closest(".form-card-actions") || e.target.closest("button") || e.target.closest("input") || e.target.closest("select")) {
+      return;
+    }
+    card.classList.toggle("expanded");
+    if (itemData) {
+      itemData._expanded = card.classList.contains("expanded");
+    }
+  };
+}
+
+function renderEducationForm() {
+  els.formEducationContainer.innerHTML = "";
+  formData.education.forEach((edu, idx) => {
+    const card = document.createElement("div");
+    card.className = "form-card-item";
+    
+    card.innerHTML = `
+      <div class="form-card-header">
+        <span class="form-card-title">Education #${idx + 1}</span>
+        <div class="form-card-actions" style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="form-card-delete-btn move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button type="button" class="form-card-delete-btn move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button type="button" class="form-card-delete-btn delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Institution <input type="text" class="edu-inst" value="${edu.institution || ""}" placeholder="Southwestern University" /></label>
+        <label>Location <input type="text" class="edu-loc" value="${edu.location || ""}" placeholder="Georgetown, TX" /></label>
+        <label>Degree <input type="text" class="edu-deg" value="${edu.degree || ""}" placeholder="B.A. Computer Science" /></label>
+        <label>Duration <input type="text" class="edu-dur" value="${edu.duration || ""}" placeholder="Aug. 2018 -- May 2021" /></label>
+      </div>
+    `;
+
+    card.querySelector(".edu-inst").oninput = (e) => { edu.institution = e.target.value; syncFormToEditor(); };
+    card.querySelector(".edu-loc").oninput = (e) => { edu.location = e.target.value; syncFormToEditor(); };
+    card.querySelector(".edu-deg").oninput = (e) => { edu.degree = e.target.value; syncFormToEditor(); };
+    card.querySelector(".edu-dur").oninput = (e) => { edu.duration = e.target.value; syncFormToEditor(); };
+    
+    card.querySelector(".move-up").onclick = () => {
+      swapItems(formData.education, idx, idx - 1);
+      renderEducationForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".move-down").onclick = () => {
+      swapItems(formData.education, idx, idx + 1);
+      renderEducationForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".delete-btn").onclick = () => {
+      formData.education.splice(idx, 1);
+      renderEducationForm();
+      syncFormToEditor();
+    };
+
+    makeCardCollapsible(card, edu);
+    els.formEducationContainer.appendChild(card);
+  });
+}
+
+function renderExperienceForm() {
+  els.formExperienceContainer.innerHTML = "";
+  formData.experience.forEach((exp, idx) => {
+    const card = document.createElement("div");
+    card.className = "form-card-item";
+    
+    let bulletsHtml = "";
+    (exp.bullets || []).forEach((bullet, bIdx) => {
+      bulletsHtml += `
+        <div class="bullet-input-row">
+          <input type="text" class="exp-bullet" data-bullet-idx="${bIdx}" value="${bullet || ""}" placeholder="Write achievements bullet point..." />
+          <button type="button" class="form-card-delete-btn delete-bullet-btn" data-bullet-idx="${bIdx}"><i class="fas fa-minus-circle"></i></button>
+        </div>
+      `;
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to save profile.");
+    card.innerHTML = `
+      <div class="form-card-header">
+        <span class="form-card-title">Experience #${idx + 1}</span>
+        <div class="form-card-actions" style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="form-card-delete-btn move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button type="button" class="form-card-delete-btn move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button type="button" class="form-card-delete-btn delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Role <input type="text" class="exp-role" value="${exp.role || ""}" placeholder="Undergraduate Research Assistant" /></label>
+        <label>Duration <input type="text" class="exp-dur" value="${exp.duration || ""}" placeholder="June 2020 -- Present" /></label>
+        <label>Company/Institution <input type="text" class="exp-comp" value="${exp.company || ""}" placeholder="Texas A&M University" /></label>
+        <label>Location <input type="text" class="exp-loc" value="${exp.location || ""}" placeholder="College Station, TX" /></label>
+        
+        <div class="full-width" style="margin-top: 10px;">
+          <span style="font-size: 0.75rem; font-weight:600; color: var(--text-muted);">Bullet Achievements</span>
+          <div class="bullets-list-container">
+            ${bulletsHtml}
+          </div>
+          <button type="button" class="btn btn-secondary btn-small add-bullet-btn" style="margin-top:8px; font-size:0.7rem; padding: 4px 8px;">
+            <i class="fas fa-plus"></i> Add Bullet
+          </button>
+        </div>
+      </div>
+    `;
+
+    card.querySelector(".exp-comp").oninput = (e) => { exp.company = e.target.value; syncFormToEditor(); };
+    card.querySelector(".exp-loc").oninput = (e) => { exp.location = e.target.value; syncFormToEditor(); };
+    card.querySelector(".exp-role").oninput = (e) => { exp.role = e.target.value; syncFormToEditor(); };
+    card.querySelector(".exp-dur").oninput = (e) => { exp.duration = e.target.value; syncFormToEditor(); };
     
-    showStatus(data.message, false, true);
-  } catch (err) {
-    showStatus(err.message, true);
-  } finally {
-    elements.saveProfileBtn.disabled = false;
+    card.querySelectorAll(".exp-bullet").forEach(bulletInput => {
+      const bIdx = parseInt(bulletInput.getAttribute("data-bullet-idx"));
+      bulletInput.oninput = (e) => {
+        exp.bullets[bIdx] = e.target.value;
+        syncFormToEditor();
+      };
+    });
+
+    card.querySelectorAll(".delete-bullet-btn").forEach(btn => {
+      const bIdx = parseInt(btn.getAttribute("data-bullet-idx"));
+      btn.onclick = () => {
+        exp.bullets.splice(bIdx, 1);
+        renderExperienceForm();
+        syncFormToEditor();
+      };
+    });
+
+    card.querySelector(".add-bullet-btn").onclick = () => {
+      if (!exp.bullets) exp.bullets = [];
+      exp.bullets.push("");
+      renderExperienceForm();
+      syncFormToEditor();
+    };
+
+    card.querySelector(".move-up").onclick = () => {
+      swapItems(formData.experience, idx, idx - 1);
+      renderExperienceForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".move-down").onclick = () => {
+      swapItems(formData.experience, idx, idx + 1);
+      renderExperienceForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".delete-btn").onclick = () => {
+      formData.experience.splice(idx, 1);
+      renderExperienceForm();
+      syncFormToEditor();
+    };
+
+    makeCardCollapsible(card, exp);
+    els.formExperienceContainer.appendChild(card);
+  });
+}
+
+function renderProjectsForm() {
+  els.formProjectsContainer.innerHTML = "";
+  formData.projects.forEach((proj, idx) => {
+    const card = document.createElement("div");
+    card.className = "form-card-item";
+    
+    let bulletsHtml = "";
+    (proj.bullets || []).forEach((bullet, bIdx) => {
+      bulletsHtml += `
+        <div class="bullet-input-row">
+          <input type="text" class="proj-bullet" data-bullet-idx="${bIdx}" value="${bullet || ""}" placeholder="Write project bullet point..." />
+          <button type="button" class="form-card-delete-btn delete-proj-bullet-btn" data-bullet-idx="${bIdx}"><i class="fas fa-minus-circle"></i></button>
+        </div>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="form-card-header">
+        <span class="form-card-title">Project #${idx + 1}</span>
+        <div class="form-card-actions" style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="form-card-delete-btn move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button type="button" class="form-card-delete-btn move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button type="button" class="form-card-delete-btn delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Project Title <input type="text" class="proj-title" value="${proj.title || ""}" placeholder="Gitlytics" /></label>
+        <label>Technologies <input type="text" class="proj-tech" value="${proj.technologies || ""}" placeholder="Python, Flask, React" /></label>
+        <label>Date <input type="text" class="proj-date" value="${proj.date || ""}" placeholder="June 2020 -- Present" /></label>
+        
+        <div class="full-width" style="margin-top: 10px;">
+          <span style="font-size: 0.75rem; font-weight:600; color: var(--text-muted);">Bullet Descriptions</span>
+          <div class="bullets-list-container">
+            ${bulletsHtml}
+          </div>
+          <button type="button" class="btn btn-secondary btn-small add-proj-bullet-btn" style="margin-top:8px; font-size:0.7rem; padding: 4px 8px;">
+            <i class="fas fa-plus"></i> Add Bullet
+          </button>
+        </div>
+      </div>
+    `;
+
+    card.querySelector(".proj-title").oninput = (e) => { proj.title = e.target.value; syncFormToEditor(); };
+    card.querySelector(".proj-tech").oninput = (e) => { proj.technologies = e.target.value; syncFormToEditor(); };
+    card.querySelector(".proj-date").oninput = (e) => { proj.date = e.target.value; syncFormToEditor(); };
+    
+    card.querySelectorAll(".proj-bullet").forEach(bulletInput => {
+      const bIdx = parseInt(bulletInput.getAttribute("data-bullet-idx"));
+      bulletInput.oninput = (e) => {
+        proj.bullets[bIdx] = e.target.value;
+        syncFormToEditor();
+      };
+    });
+
+    card.querySelectorAll(".delete-proj-bullet-btn").forEach(btn => {
+      const bIdx = parseInt(btn.getAttribute("data-bullet-idx"));
+      btn.onclick = () => {
+        proj.bullets.splice(bIdx, 1);
+        renderProjectsForm();
+        syncFormToEditor();
+      };
+    });
+
+    card.querySelector(".add-proj-bullet-btn").onclick = () => {
+      if (!proj.bullets) proj.bullets = [];
+      proj.bullets.push("");
+      renderProjectsForm();
+      syncFormToEditor();
+    };
+
+    card.querySelector(".move-up").onclick = () => {
+      swapItems(formData.projects, idx, idx - 1);
+      renderProjectsForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".move-down").onclick = () => {
+      swapItems(formData.projects, idx, idx + 1);
+      renderProjectsForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".delete-btn").onclick = () => {
+      formData.projects.splice(idx, 1);
+      renderProjectsForm();
+      syncFormToEditor();
+    };
+
+    makeCardCollapsible(card, proj);
+    els.formProjectsContainer.appendChild(card);
+  });
+}
+
+function renderCertificatesForm() {
+  els.formCertificatesContainer.innerHTML = "";
+  if (!formData.certificates) formData.certificates = [];
+  
+  formData.certificates.forEach((cert, idx) => {
+    const card = document.createElement("div");
+    card.className = "form-card-item";
+    card.innerHTML = `
+      <div class="form-card-header">
+        <span class="form-card-title">Certificate #${idx + 1}</span>
+        <div class="form-card-actions" style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="form-card-delete-btn move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button type="button" class="form-card-delete-btn move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button type="button" class="form-card-delete-btn delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Certificate Title <input type="text" class="cert-title" value="${cert.title || ""}" placeholder="AWS Certified Solutions Architect" /></label>
+        <label>Issuer <input type="text" class="cert-issuer" value="${cert.issuer || ""}" placeholder="Amazon Web Services" /></label>
+        <label class="full-width">Date Issued <input type="text" class="cert-date" value="${cert.date || ""}" placeholder="Jan. 2021" /></label>
+      </div>
+    `;
+
+    card.querySelector(".cert-title").oninput = (e) => { cert.title = e.target.value; syncFormToEditor(); };
+    card.querySelector(".cert-issuer").oninput = (e) => { cert.issuer = e.target.value; syncFormToEditor(); };
+    card.querySelector(".cert-date").oninput = (e) => { cert.date = e.target.value; syncFormToEditor(); };
+    
+    card.querySelector(".move-up").onclick = () => {
+      swapItems(formData.certificates, idx, idx - 1);
+      renderCertificatesForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".move-down").onclick = () => {
+      swapItems(formData.certificates, idx, idx + 1);
+      renderCertificatesForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".delete-btn").onclick = () => {
+      formData.certificates.splice(idx, 1);
+      renderCertificatesForm();
+      syncFormToEditor();
+    };
+
+    makeCardCollapsible(card, cert);
+    els.formCertificatesContainer.appendChild(card);
+  });
+}
+
+function renderSkillsForm() {
+  els.formSkillsContainer.innerHTML = "";
+  if (!formData.skills || !Array.isArray(formData.skills)) {
+    formData.skills = [
+      { label: "Languages", value: "Java, Python, C/C++, SQL (Postgres), JavaScript, HTML/CSS, R" },
+      { label: "Frameworks", value: "React, Node.js, Flask, JUnit, WordPress, Material-UI, FastAPI" },
+      { label: "Developer Tools", value: "Git, Docker, TravisCI, Google Cloud Platform, VS Code, Visual Studio, PyCharm, IntelliJ, Eclipse" },
+      { label: "Libraries", value: "pandas, NumPy, Matplotlib" }
+    ];
+  }
+  
+  formData.skills.forEach((skill, idx) => {
+    const card = document.createElement("div");
+    card.className = "form-card-item";
+    card.innerHTML = `
+      <div class="form-card-header">
+        <span class="form-card-title">Skill Category #${idx + 1}</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="form-card-delete-btn move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button type="button" class="form-card-delete-btn move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button type="button" class="form-card-delete-btn delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Category Label <input type="text" class="skill-label" value="${skill.label || ""}" placeholder="Languages" /></label>
+        <label>Skills Values <input type="text" class="skill-val" value="${skill.value || ""}" placeholder="Java, Python, C++" /></label>
+      </div>
+    `;
+
+    card.querySelector(".skill-label").oninput = (e) => { skill.label = e.target.value; syncFormToEditor(); };
+    card.querySelector(".skill-val").oninput = (e) => { skill.value = e.target.value; syncFormToEditor(); };
+    
+    card.querySelector(".move-up").onclick = () => {
+      swapItems(formData.skills, idx, idx - 1);
+      renderSkillsForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".move-down").onclick = () => {
+      swapItems(formData.skills, idx, idx + 1);
+      renderSkillsForm();
+      syncFormToEditor();
+    };
+    card.querySelector(".delete-btn").onclick = () => {
+      formData.skills.splice(idx, 1);
+      renderSkillsForm();
+      syncFormToEditor();
+    };
+
+    els.formSkillsContainer.appendChild(card);
+  });
+}
+
+function renderDynamicAccordions() {
+  const container = els.formEditorContent;
+  
+  // Keep only the first accordion (Personal Details)
+  const personalDetails = container.querySelector(".accordion-item");
+  if (!personalDetails) return;
+  
+  container.innerHTML = "";
+  container.appendChild(personalDetails);
+  
+  const order = state.sectionOrder || ["education", "experience", "projects", "certificates", "skills"];
+  
+  order.forEach(secKey => {
+    const secLower = secKey.toLowerCase();
+    
+    let title = "";
+    let iconClass = "fas fa-folder";
+    let bodyId = "";
+    let renderFn = null;
+    let addBtnText = "";
+    let addFn = null;
+    
+    if (secLower === "education") {
+      title = "Education";
+      iconClass = "fas fa-graduation-cap";
+      bodyId = "formEducationContainer";
+      renderFn = renderEducationForm;
+      addBtnText = "Add Education Entry";
+      addFn = () => {
+        formData.education.push({ institution: "", location: "", degree: "", duration: "", _justAdded: true });
+        renderEducationForm();
+        syncFormToEditor();
+      };
+    } else if (secLower === "experience") {
+      title = "Work Experience";
+      iconClass = "fas fa-briefcase";
+      bodyId = "formExperienceContainer";
+      renderFn = renderExperienceForm;
+      addBtnText = "Add Experience Entry";
+      addFn = () => {
+        formData.experience.push({ company: "", location: "", role: "", duration: "", bullets: [""], _justAdded: true });
+        renderExperienceForm();
+        syncFormToEditor();
+      };
+    } else if (secLower === "projects") {
+      title = "Projects";
+      iconClass = "fas fa-project-diagram";
+      bodyId = "formProjectsContainer";
+      renderFn = renderProjectsForm;
+      addBtnText = "Add Project Entry";
+      addFn = () => {
+        formData.projects.push({ title: "", technologies: "", date: "", bullets: [""], _justAdded: true });
+        renderProjectsForm();
+        syncFormToEditor();
+      };
+    } else if (secLower === "certificates") {
+      title = "Certificates";
+      iconClass = "fas fa-certificate";
+      bodyId = "formCertificatesContainer";
+      renderFn = renderCertificatesForm;
+      addBtnText = "Add Certificate Entry";
+      addFn = () => {
+        formData.certificates.push({ title: "", issuer: "", date: "", _justAdded: true });
+        renderCertificatesForm();
+        syncFormToEditor();
+      };
+    } else if (secLower === "skills" || secLower === "technical skills") {
+      title = "Technical Skills";
+      iconClass = "fas fa-cogs";
+      bodyId = "formSkillsContainer";
+      renderFn = renderSkillsForm;
+      addBtnText = "Add Skill Category";
+      addFn = () => {
+        formData.skills.push({ label: "", value: "", _justAdded: true });
+        renderSkillsForm();
+        syncFormToEditor();
+      };
+    } else {
+      // Custom section!
+      const cSec = (formData.customSections || []).find(cs => cs.title.toLowerCase() === secLower);
+      if (!cSec) return;
+      
+      title = cSec.title;
+      iconClass = "fas fa-folder";
+      bodyId = `customSection_${secLower.replace(/[^a-z0-9]/g, "_")}`;
+      renderFn = () => renderCustomSectionForm(cSec, bodyId);
+      addBtnText = `Add ${title} Entry`;
+      addFn = () => {
+        if (!cSec.items) cSec.items = [];
+        cSec.items.push({ title: "", subtitle: "", date: "", bullets: [""], _justAdded: true });
+        renderCustomSectionForm(cSec, bodyId);
+        syncFormToEditor();
+      };
+    }
+    
+    // Create Accordion Item DOM Node
+    const accItem = document.createElement("div");
+    accItem.className = "accordion-item";
+    accItem.setAttribute("data-section-key", secLower);
+    
+    accItem.innerHTML = `
+      <div class="accordion-header">
+        <span><i class="${iconClass}"></i> ${title}</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="accordion-body">
+        <div id="${bodyId}"></div>
+        <button type="button" class="btn btn-secondary" style="width: 100%; margin-top: 12px;">
+          <i class="fas fa-plus"></i> ${addBtnText}
+        </button>
+      </div>
+    `;
+    
+    accItem.querySelector("button").onclick = addFn;
+    container.appendChild(accItem);
+  });
+
+  // Re-map global refs in els
+  els.formEducationContainer = document.getElementById("formEducationContainer");
+  els.formExperienceContainer = document.getElementById("formExperienceContainer");
+  els.formProjectsContainer = document.getElementById("formProjectsContainer");
+  els.formCertificatesContainer = document.getElementById("formCertificatesContainer");
+  els.formSkillsContainer = document.getElementById("formSkillsContainer");
+
+  // Call the actual render functions
+  order.forEach(secKey => {
+    const secLower = secKey.toLowerCase();
+    if (secLower === "education") renderEducationForm();
+    else if (secLower === "experience") renderExperienceForm();
+    else if (secLower === "projects") renderProjectsForm();
+    else if (secLower === "certificates") renderCertificatesForm();
+    else if (secLower === "skills" || secLower === "technical skills") renderSkillsForm();
+    else {
+      const cSec = (formData.customSections || []).find(cs => cs.title.toLowerCase() === secLower);
+      if (cSec) {
+        const bodyId = `customSection_${secLower.replace(/[^a-z0-9]/g, "_")}`;
+        renderCustomSectionForm(cSec, bodyId);
+      }
+    }
+  });
+  
+  initAccordions();
+  initDraggableAccordions();
+}
+
+function renderCustomSectionForm(cSec, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  if (!cSec.items || !cSec.items.length) {
+    container.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:12px;">No items in this section. Click the button below to add one.</div>`;
+    return;
+  }
+  
+  cSec.items.forEach((item, idx) => {
+    const card = document.createElement("div");
+    card.className = "form-card-item";
+    
+    let bulletsHtml = "";
+    (item.bullets || []).forEach((bullet, bIdx) => {
+      bulletsHtml += `
+        <div class="bullet-input-row">
+          <input type="text" class="custom-bullet" data-bullet-idx="${bIdx}" value="${bullet || ""}" placeholder="Write bullet point..." />
+          <button type="button" class="form-card-delete-btn delete-bullet-btn" data-bullet-idx="${bIdx}"><i class="fas fa-minus-circle"></i></button>
+        </div>
+      `;
+    });
+    
+    card.innerHTML = `
+      <div class="form-card-header">
+        <span class="form-card-title">${cSec.title} Entry #${idx + 1}</span>
+        <div class="form-card-actions" style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="form-card-delete-btn move-up" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button type="button" class="form-card-delete-btn move-down" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button type="button" class="form-card-delete-btn delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Heading / Title <input type="text" class="custom-title" value="${item.title || ""}" placeholder="E.g. LeetCode or FEELGAN" /></label>
+        <label>Subheading / Details <input type="text" class="custom-subtitle" value="${item.subtitle || ""}" placeholder="E.g. Python, TensorFlow or Solved 350+ problems" /></label>
+        <label>Date / Duration <input type="text" class="custom-date" value="${item.date || ""}" placeholder="E.g. Jan. 2024" /></label>
+        
+        <div class="full-width" style="margin-top: 10px;">
+          <span style="font-size: 0.75rem; font-weight:600; color: var(--text-muted);">Bullet Items (Optional)</span>
+          <div class="bullets-list-container">
+            ${bulletsHtml}
+          </div>
+          <button type="button" class="btn btn-secondary btn-small add-bullet-btn" style="margin-top:8px; font-size:0.7rem; padding: 4px 8px;">
+            <i class="fas fa-plus"></i> Add Bullet
+          </button>
+        </div>
+      </div>
+    `;
+    
+    card.querySelector(".custom-title").oninput = (e) => { item.title = e.target.value; syncFormToEditor(); };
+    card.querySelector(".custom-subtitle").oninput = (e) => { item.subtitle = e.target.value; syncFormToEditor(); };
+    card.querySelector(".custom-date").oninput = (e) => { item.date = e.target.value; syncFormToEditor(); };
+    
+    card.querySelectorAll(".custom-bullet").forEach(bulletInput => {
+      const bIdx = parseInt(bulletInput.getAttribute("data-bullet-idx"));
+      bulletInput.oninput = (e) => {
+        item.bullets[bIdx] = e.target.value;
+        syncFormToEditor();
+      };
+    });
+    
+    card.querySelectorAll(".delete-bullet-btn").forEach(btn => {
+      const bIdx = parseInt(btn.getAttribute("data-bullet-idx"));
+      btn.onclick = () => {
+        item.bullets.splice(bIdx, 1);
+        renderCustomSectionForm(cSec, containerId);
+        syncFormToEditor();
+      };
+    });
+    
+    card.querySelector(".add-bullet-btn").onclick = () => {
+      if (!item.bullets) item.bullets = [];
+      item.bullets.push("");
+      renderCustomSectionForm(cSec, containerId);
+      syncFormToEditor();
+    };
+    
+    card.querySelector(".move-up").onclick = () => {
+      swapItems(cSec.items, idx, idx - 1);
+      renderCustomSectionForm(cSec, containerId);
+      syncFormToEditor();
+    };
+    card.querySelector(".move-down").onclick = () => {
+      swapItems(cSec.items, idx, idx + 1);
+      renderCustomSectionForm(cSec, containerId);
+      syncFormToEditor();
+    };
+    card.querySelector(".delete-btn").onclick = () => {
+      cSec.items.splice(idx, 1);
+      renderCustomSectionForm(cSec, containerId);
+      syncFormToEditor();
+    };
+    
+    makeCardCollapsible(card, item);
+    container.appendChild(card);
+  });
+}
+
+// 8. Load Project Data & Sync
+function loadProjectData() {
+  loadLocalOrTemplate();
+  els.projectTitleInput.value = state.projectName;
+  
+  // Settings Restoring
+  els.fontSizeSelect.value = state.fontSize || "14px";
+  editor.getWrapperElement().style.fontSize = state.fontSize || "14px";
+  els.editorThemeSelect.value = state.editorTheme || "dracula";
+  editor.setOption("theme", state.editorTheme || "dracula");
+  els.lineWrappingCheckbox.checked = state.lineWrapping !== undefined ? state.lineWrapping : true;
+  editor.setOption("lineWrapping", state.lineWrapping !== undefined ? state.lineWrapping : true);
+  
+  els.pageBudgetSelect.value = state.pageBudget || "auto";
+  els.compactnessSelect.value = state.compactness || "normal";
+  els.sectionSpacingSelect.value = state.sectionSpacing || "-15pt";
+  
+  applySpacingClasses();
+  
+  // Sort/Reorder Accordion nodes inside visual DOM tree
+  reorderAccordionsInDOM();
+  
+  renderFileTree();
+  initForms();
+  
+  editor.setValue(state.files[state.activeFile] || "");
+  compileLatex();
+}
+
+function applySpacingClasses() {
+  els.resumeSheet.className = "resume-sheet";
+  els.resumeSheet.classList.add(`spacing-${state.compactness}`);
+  if (state.pageBudget !== "auto") {
+    els.resumeSheet.classList.add(`page-budget-${state.pageBudget}`);
+  }
+  
+  // Set the CSS Custom Property for the resume preview font size
+  const previewSize = state.fontSize || "14px";
+  els.resumeSheet.style.setProperty("--preview-font-size", previewSize);
+}
+
+function loadDefaultWorkspace() {
+  state.projectName = "My LaTeX Document";
+  state.activeFile = "resume.tex";
+  state.sectionOrder = ["education", "experience", "projects", "certificates", "skills"];
+  
+  formData = JSON.parse(JSON.stringify(TEMPLATE_FORM_DATA.jakes_resume));
+  
+  const gen = generateLatexFromForm(formData, "jakes_resume", "normal", state.sectionOrder);
+  state.files = {
+    "resume.tex": gen
+  };
+}
+
+function loadLocalOrTemplate() {
+  const localProject = localStorage.getItem("overleaf_live_project_v6");
+  const localForm = localStorage.getItem("overleaf_form_data_v6");
+  
+  if (localForm) {
+    try {
+      formData = JSON.parse(localForm);
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  if (localProject) {
+    try {
+      const parsed = JSON.parse(localProject);
+      state.projectName = parsed.projectName || "My LaTeX Document";
+      state.activeFile = parsed.activeFile || "resume.tex";
+      state.files = parsed.files || {};
+      state.fontSize = parsed.fontSize || "14px";
+      state.editorTheme = parsed.editorTheme || "dracula";
+      state.lineWrapping = parsed.lineWrapping !== undefined ? parsed.lineWrapping : true;
+      state.pageBudget = parsed.pageBudget || "auto";
+      state.compactness = parsed.compactness || "normal";
+      state.sectionSpacing = parsed.sectionSpacing || "-15pt";
+      state.sectionOrder = parsed.sectionOrder || ["education", "experience", "projects", "certificates", "skills"];
+      return;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  loadDefaultWorkspace();
+}
+
+function saveDraftLocal() {
+  const data = {
+    projectName: state.projectName,
+    activeFile: state.activeFile,
+    files: state.files,
+    fontSize: state.fontSize,
+    editorTheme: state.editorTheme,
+    lineWrapping: state.lineWrapping,
+    pageBudget: state.pageBudget,
+    compactness: state.compactness,
+    sectionSpacing: state.sectionSpacing,
+    sectionOrder: state.sectionOrder
+  };
+  localStorage.setItem("overleaf_live_project_v6", JSON.stringify(data));
+  localStorage.setItem("overleaf_form_data_v6", JSON.stringify(formData));
+  
+  // Autosave notification animations indicator triggers
+  triggerAutosaveBadge();
+}
+
+function triggerAutosaveBadge() {
+  if (!els.autosaveBadge) return;
+  clearTimeout(saveIndicatorTimeout);
+  els.autosaveBadge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  els.autosaveBadge.style.color = 'var(--warning)';
+  els.autosaveBadge.style.background = 'rgba(245, 158, 11, 0.1)';
+  
+  saveIndicatorTimeout = setTimeout(() => {
+    els.autosaveBadge.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Saved';
+    els.autosaveBadge.style.color = 'var(--success)';
+    els.autosaveBadge.style.background = 'rgba(16, 185, 129, 0.1)';
+  }, 400);
+}
+
+// 9. File tree renderer
+function renderFileTree() {
+  els.fileTreeContainer.innerHTML = "";
+  Object.keys(state.files).forEach(filename => {
+    const item = document.createElement("li");
+    item.className = `file-item ${filename === state.activeFile ? "active" : ""}`;
+    
+    const fileLeft = document.createElement("div");
+    fileLeft.className = "file-item-left";
+    fileLeft.innerHTML = `<i class="far fa-file-alt"></i> <span>${filename}</span>`;
+    fileLeft.addEventListener("click", () => {
+      switchActiveFile(filename);
+    });
+    item.appendChild(fileLeft);
+
+    const actions = document.createElement("div");
+    actions.className = "file-actions";
+    
+    const renameBtn = document.createElement("button");
+    renameBtn.className = "file-action-btn";
+    renameBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    renameBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      renameFilePrompt(filename);
+    });
+    actions.appendChild(renameBtn);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "file-action-btn";
+    deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteFilePrompt(filename);
+    });
+    actions.appendChild(deleteBtn);
+
+    item.appendChild(actions);
+    els.fileTreeContainer.appendChild(item);
+  });
+}
+
+function switchActiveFile(filename) {
+  if (state.activeFile === filename) return;
+  state.activeFile = filename;
+  editor.setValue(state.files[filename] || "");
+  renderFileTree();
+  compileLatex();
+  saveDraftLocal();
+}
+
+function renameFilePrompt(filename) {
+  const newName = prompt(`Enter a new name for ${filename}:`, filename);
+  if (!newName || newName.trim() === "" || newName === filename) return;
+  
+  const trimmed = newName.trim();
+  state.files[trimmed] = state.files[filename];
+  delete state.files[filename];
+  
+  if (state.activeFile === filename) {
+    state.activeFile = trimmed;
+  }
+  renderFileTree();
+  saveDraftLocal();
+}
+
+function deleteFilePrompt(filename) {
+  const keys = Object.keys(state.files);
+  if (keys.length <= 1) {
+    alert("You must keep at least one file in your LaTeX project.");
+    return;
+  }
+  
+  if (confirm(`Are you sure you want to delete ${filename}?`)) {
+    delete state.files[filename];
+    if (state.activeFile === filename) {
+      state.activeFile = Object.keys(state.files)[0];
+      editor.setValue(state.files[state.activeFile]);
+    }
+    renderFileTree();
+    compileLatex();
+    saveDraftLocal();
   }
 }
 
-function populateFormFields(data) {
-  draftData = { ...draftData, ...data };
-
-  // Set values only for elements that exist on this page
-  if (document.getElementById("jobTitle")) setValue("jobTitle", draftData.jobTitle);
-  if (document.getElementById("projectCount")) setValue("projectCount", draftData.projectCount);
-  if (document.getElementById("certificateCount")) setValue("certificateCount", draftData.certificateCount);
-  if (document.getElementById("achievementCount")) setValue("achievementCount", draftData.achievementCount || 3);
-  if (document.getElementById("skillsPerCategory")) setValue("skillsPerCategory", draftData.skillsPerCategory || 6);
-  if (document.getElementById("name")) setValue("name", draftData.name);
-  if (document.getElementById("email")) setValue("email", draftData.email);
-  if (document.getElementById("phone")) setValue("phone", draftData.phone);
-  if (document.getElementById("github")) setValue("github", draftData.github);
-  if (document.getElementById("linkedin")) setValue("linkedin", draftData.linkedin);
-  if (document.getElementById("leetcode")) setValue("leetcode", draftData.leetcode);
+// 10. Draggable sections implementation
+function initDraggableAccordions() {
+  const container = els.formEditorContent;
+  const items = container.querySelectorAll(".accordion-item");
   
-  if (document.getElementById("skillsLanguages")) {
-    let skillsObj = draftData.skills || {};
-    if (currentStep === 5) {
-      const savedJson = localStorage.getItem("latestResumeResultData");
-      if (savedJson) {
-        try {
-          const resData = JSON.parse(savedJson);
-          if (resData.resume && resData.resume.skills) {
-            skillsObj = resData.resume.skills;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-    const formatSkillList = (val) => Array.isArray(val) ? val.join(", ") : String(val || "");
-    setValue("skillsLanguages", formatSkillList(skillsObj.languages));
-    setValue("skillsFrameworks", formatSkillList(skillsObj.frameworks));
-    setValue("skillsDatabases", formatSkillList(skillsObj.databases));
-    setValue("skillsTools", formatSkillList(skillsObj.tools));
-    setValue("skillsCore", formatSkillList(skillsObj.core));
-  }
-  
-  if (document.getElementById("jobDescription")) setValue("jobDescription", draftData.jobDescription);
-
-  // Clear existing dynamic card containers and re-add if containers are in DOM
-  if (document.getElementById("educationContainer") && elements.educationContainer) {
-    elements.educationContainer.innerHTML = "";
-    if (draftData.education) draftData.education.forEach(addEducation);
-  }
-  if (document.getElementById("experienceContainer") && elements.experienceContainer) {
-    elements.experienceContainer.innerHTML = "";
-    if (draftData.experience) draftData.experience.forEach(addExperience);
-  }
-  if (document.getElementById("patentContainer") && elements.patentContainer) {
-    elements.patentContainer.innerHTML = "";
-    if (draftData.patents) draftData.patents.forEach(addPatent);
-  }
-  if (document.getElementById("projectsContainer") && elements.projectsContainer) {
-    elements.projectsContainer.innerHTML = "";
-    if (draftData.projects) draftData.projects.forEach(addProject);
-  }
-  if (document.getElementById("certificatesContainer") && elements.certificatesContainer) {
-    elements.certificatesContainer.innerHTML = "";
-    if (draftData.certificates) draftData.certificates.forEach(addCertificate);
-  }
-  if (document.getElementById("achievementsContainer") && elements.achievementsContainer) {
-    elements.achievementsContainer.innerHTML = "";
-    if (draftData.achievements) {
-      draftData.achievements.forEach(ach => {
-        addAchievement(ach.text || ach);
+  items.forEach((item, idx) => {
+    // Keep Personal Details locked at index 0
+    if (idx === 0) return;
+    
+    item.setAttribute("draggable", "true");
+    
+    // Insert drag handle lines next to header titles
+    const header = item.querySelector(".accordion-header");
+    if (!header.querySelector(".drag-handle")) {
+      const handle = document.createElement("i");
+      handle.className = "fas fa-grip-lines drag-handle";
+      handle.style.cssText = "cursor: grab; margin-right: 12px; color: var(--text-muted); font-size: 0.85rem; padding: 4px;";
+      header.insertBefore(handle, header.firstChild);
+      
+      // Stop accordion collapse trigger when clicking dragging grip
+      handle.addEventListener("click", (e) => {
+        e.stopPropagation();
       });
     }
-  }
-}
-
-function saveApiKey() {
-  const key = elements.apiKey.value.trim();
-  if (!key) return showStatus("Enter an API key first.", true);
-  localStorage.setItem("geminiApiKey", key);
-  localStorage.setItem("geminiModel", elements.modelName.value);
-  showStatus("API key saved locally in this browser.", false, true);
-}
-
-function clearApiKey() {
-  localStorage.removeItem("geminiApiKey");
-  elements.apiKey.value = "";
-  showStatus("Saved API key cleared.");
-}
-
-function toggleTheme() {
-  document.body.classList.toggle("dark");
-  localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
-}
-
-async function handleJdFileUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  const text = await file.text();
-  document.getElementById("jobDescription").value = text;
-  saveDraftToLocal();
-  showStatus("Job description file loaded.", false, true);
-}
-
-async function handleAiGenerate(event) {
-  event.preventDefault();
-  const data = collectData();
-  const apiKey = elements.apiKey.value.trim();
-  const modelName = elements.modelName.value;
-
-  try {
-    setBusy(true);
-    showStatus("Analyzing JD, ranking projects/certificates, and generating resume with AI...");
-    const prompt = buildResumePrompt(data);
-    const aiResume = await callGemini({ apiKey, modelName, prompt });
-    const resume = ensureCounts(aiResume, data);
     
-    // Save generated results
-    latestJson = { input: data, resume };
-    latestLatex = buildLatexResume(data, resume);
-    localStorage.setItem("latestResumeResultData", JSON.stringify(latestJson));
-    localStorage.setItem("latestResumeLatex", latestLatex);
+    item.addEventListener("dragstart", (e) => {
+      item.classList.add("dragging");
+      e.dataTransfer.setData("text/plain", idx);
+      e.dataTransfer.effectAllowed = "move";
+    });
     
-    showStatus("AI resume generated successfully.", false, true);
+    item.addEventListener("dragend", () => {
+      item.classList.remove("dragging");
+      updateSectionOrderFromDOM();
+    });
     
-    // Perform browser routing to the output page!
-    window.location.href = "output.html";
-  } catch (error) {
-    console.error(error);
-    showStatus(`${error.message}. You can use Generate without AI for fallback.`, true);
-  } finally {
-    setBusy(false);
-  }
+    item.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const draggingItem = container.querySelector(".dragging");
+      const siblings = [...container.querySelectorAll(".accordion-item:not(.dragging)")];
+      
+      // Prevent dragging above index 0 (Personal Details card)
+      const nextSibling = siblings.find(sibling => {
+        if (sibling === siblings[0]) return false;
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+      
+      if (nextSibling) {
+        container.insertBefore(draggingItem, nextSibling);
+      } else {
+        container.appendChild(draggingItem);
+      }
+    });
+  });
 }
 
-function handleLocalGenerate() {
-  const apiKey = elements.apiKey ? elements.apiKey.value.trim() : "";
-  if (apiKey) {
-    showStatus("API key detected. Using AI Optimization generation...", false, true);
-    const mockEvent = { preventDefault: () => {} };
-    handleAiGenerate(mockEvent);
+function reorderAccordionsInDOM() {
+  renderDynamicAccordions();
+}
+
+function updateSectionOrderFromDOM() {
+  const container = els.formEditorContent;
+  const items = [...container.querySelectorAll(".accordion-item")];
+  
+  const newOrder = [];
+  items.forEach(item => {
+    const key = item.getAttribute("data-section-key");
+    if (key) {
+      newOrder.push(key);
+    }
+  });
+  
+  state.sectionOrder = newOrder;
+  saveDraftLocal();
+  syncFormToEditor();
+}
+
+// 11. Event bindings
+function bindEvents() {
+  els.recompileBtn.addEventListener("click", compileLatex);
+  
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      compileLatex();
+    }
+  });
+
+  els.downloadTexBtn.addEventListener("click", () => {
+    const filename = state.activeFile;
+    const content = editor.getValue();
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
+
+  els.printPdfBtn.addEventListener("click", () => {
+    window.print();
+  });
+
+  els.copyCodeBtn.addEventListener("click", () => {
+    const text = editor.getValue();
+    navigator.clipboard.writeText(text).then(() => {
+      const prevHtml = els.copyCodeBtn.innerHTML;
+      els.copyCodeBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => {
+        els.copyCodeBtn.innerHTML = prevHtml;
+      }, 1500);
+    }).catch(err => {
+      console.error("Clipboard copy failed", err);
+    });
+  });
+
+  els.themeToggleBtn.addEventListener("click", () => {
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    const nextTheme = currentTheme === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  });
+
+  els.projectTitleInput.addEventListener("change", () => {
+    state.projectName = els.projectTitleInput.value.trim() || "My LaTeX Document";
+    saveDraftLocal();
+  });
+
+  els.templateSelect.addEventListener("change", () => {
+    const selected = els.templateSelect.value;
+    if (TEMPLATE_FORM_DATA[selected]) {
+      if (confirm("Loading a template will overwrite your current details. Continue?")) {
+        formData = JSON.parse(JSON.stringify(TEMPLATE_FORM_DATA[selected]));
+        initForms();
+        syncFormToEditor();
+      }
+    }
+  });
+
+  els.newFileBtn.addEventListener("click", () => {
+    const name = prompt("Enter filename (e.g. sections.tex):");
+    if (!name || name.trim() === "") return;
+    
+    let filename = name.trim();
+    if (!filename.endsWith(".tex")) {
+      filename += ".tex";
+    }
+    
+    if (state.files[filename] !== undefined) {
+      alert("A file with that name already exists.");
+      return;
+    }
+    
+    state.files[filename] = `% ${filename}\n\\section{New Section}\nWrite your content here...`;
+    state.activeFile = filename;
+    editor.setValue(state.files[filename]);
+    renderFileTree();
+    compileLatex();
+    saveDraftLocal();
+  });
+
+  els.autoCompileToggle.addEventListener("change", () => {
+    state.autoCompile = els.autoCompileToggle.checked;
+  });
+
+  els.zoomInBtn.addEventListener("click", () => {
+    state.zoom = Math.min(1.5, state.zoom + 0.05);
+    updateZoom();
+  });
+  els.zoomOutBtn.addEventListener("click", () => {
+    state.zoom = Math.max(0.5, state.zoom - 0.05);
+    updateZoom();
+  });
+
+  els.fontSizeSelect.addEventListener("change", () => {
+    const size = els.fontSizeSelect.value;
+    editor.getWrapperElement().style.fontSize = size;
+    editor.refresh();
+    state.fontSize = size;
+    applySpacingClasses();
+    saveDraftLocal();
+  });
+
+  els.editorThemeSelect.addEventListener("change", () => {
+    const theme = els.editorThemeSelect.value;
+    editor.setOption("theme", theme);
+    state.editorTheme = theme;
+    saveDraftLocal();
+  });
+
+  els.lineWrappingCheckbox.addEventListener("change", () => {
+    const wrap = els.lineWrappingCheckbox.checked;
+    editor.setOption("lineWrapping", wrap);
+    state.lineWrapping = wrap;
+    saveDraftLocal();
+  });
+
+  els.pageBudgetSelect.addEventListener("change", () => {
+    state.pageBudget = els.pageBudgetSelect.value;
+    applySpacingClasses();
+    saveDraftLocal();
+    compileLatex();
+  });
+
+  els.compactnessSelect.addEventListener("change", () => {
+    state.compactness = els.compactnessSelect.value;
+    applySpacingClasses();
+    syncFormToEditor();
+  });
+
+  els.sectionSpacingSelect.addEventListener("change", () => {
+    state.sectionSpacing = els.sectionSpacingSelect.value;
+    syncFormToEditor();
+  });
+
+  // Interactive Preview Click-to-Edit
+  els.compiledContentContainer.addEventListener("click", (e) => {
+    const target = e.target;
+    
+    const closestSection = target.closest(".latex-document h2.section-title");
+    const inHeader = target.closest(".latex-document .text-center");
+    
+    if (inHeader) {
+      openAccordionSection(0);
+    } else if (closestSection) {
+      const text = closestSection.textContent.toLowerCase();
+      if (text.includes("education")) {
+        const idx = state.sectionOrder.indexOf("education") + 1;
+        openAccordionSection(idx);
+      } else if (text.includes("experience")) {
+        const idx = state.sectionOrder.indexOf("experience") + 1;
+        openAccordionSection(idx);
+      } else if (text.includes("project")) {
+        const idx = state.sectionOrder.indexOf("projects") + 1;
+        openAccordionSection(idx);
+      } else if (text.includes("certificate")) {
+        const idx = state.sectionOrder.indexOf("certificates") + 1;
+        openAccordionSection(idx);
+      } else if (text.includes("skills")) {
+        const idx = state.sectionOrder.indexOf("skills") + 1;
+        openAccordionSection(idx);
+      }
+    } else {
+      let prev = target;
+      while (prev) {
+        if (prev.classList && prev.classList.contains("section-title")) {
+          const text = prev.textContent.toLowerCase();
+          if (text.includes("education")) openAccordionSection(state.sectionOrder.indexOf("education") + 1);
+          else if (text.includes("experience")) openAccordionSection(state.sectionOrder.indexOf("experience") + 1);
+          else if (text.includes("project")) openAccordionSection(state.sectionOrder.indexOf("projects") + 1);
+          else if (text.includes("certificate")) openAccordionSection(state.sectionOrder.indexOf("certificates") + 1);
+          else if (text.includes("skills")) openAccordionSection(state.sectionOrder.indexOf("skills") + 1);
+          break;
+        }
+        if (prev.classList && prev.classList.contains("latex-document")) {
+          openAccordionSection(0);
+          break;
+        }
+        prev = prev.previousElementSibling || prev.parentElement;
+      }
+    }
+  });
+
+  els.aiPolishBtn.addEventListener("click", handleAiPolish);
+}
+
+function openAccordionSection(index) {
+  switchTab("form");
+  
+  const items = document.querySelectorAll(".accordion-item");
+  items.forEach((item, idx) => {
+    if (idx === index) {
+      item.classList.add("active");
+      setTimeout(() => {
+        scrollToAccordionItem(item);
+      }, 180);
+    } else {
+      item.classList.remove("active");
+    }
+  });
+}
+
+function updateZoom() {
+  document.documentElement.style.setProperty("--zoom-factor", state.zoom);
+  els.zoomPercentText.textContent = `${Math.round(state.zoom * 100)}%`;
+}
+
+// 12. Gemini AI Polish helper
+async function handleAiPolish() {
+  const selectedText = editor.getSelection();
+  const promptVal = els.aiPromptTextarea.value.trim();
+  const apiKey = els.geminiApiKeyInput.value.trim();
+
+  let targetText = selectedText || promptVal;
+  if (!targetText) {
+    alert("Please select some LaTeX code in the editor or write details in the input box first.");
     return;
   }
 
-  const data = collectData();
-  const resume = generateLocalResume(data);
-  
-  // Save generated results
-  latestJson = { input: data, resume };
-  latestLatex = buildLatexResume(data, resume);
-  localStorage.setItem("latestResumeResultData", JSON.stringify(latestJson));
-  localStorage.setItem("latestResumeLatex", latestLatex);
-  
-  showStatus("Local resume generated without AI. Redirecting...", false, true);
-  
-  // Perform browser routing to the output page!
-  window.location.href = "output.html";
-}
+  els.aiPolishBtn.disabled = true;
+  els.aiPolishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Polishing...';
 
-function renderResult(data, resume) {
-  // Renders the preview elements if called while on Step 4
-  latestJson = { input: data, resume };
-  latestLatex = buildLatexResume(data, resume);
-
-  if (elements.resumePreview) {
-    elements.resumePreview.classList.remove("empty-state");
-    elements.resumePreview.innerHTML = buildHtmlPreview(data, resume);
-  }
-  if (elements.latexOutput) elements.latexOutput.textContent = latestLatex;
-  if (elements.analysisOutput) elements.analysisOutput.innerHTML = buildAnalysisHtml(resume);
-  
-  const score = resume.atsScore || 0;
-  if (elements.atsScore) elements.atsScore.textContent = `${score}%`;
-  
-  if (elements.scoreCircle) {
-    elements.scoreCircle.className = "circle-progress-wrapper";
-    if (score >= 80) {
-      elements.scoreCircle.classList.add("high-score");
-    } else if (score >= 60) {
-      elements.scoreCircle.classList.add("med-score");
-    }
-  }
-  
-  if (elements.selectedCounts) {
-    elements.selectedCounts.textContent = `${(resume.selectedProjects || []).length} Projects / ${(resume.selectedCertificates || []).length} Certificates Selected`;
-  }
-  activateTab("preview");
-}
-
-function buildAnalysisHtml(resume) {
-  return `
-    <h3>Selection Reason</h3>
-    <p>${escapeHtml(resume.selectionReason || "Projects and certificates were selected based on job description relevance.")}</p>
-
-    <h3>Matched Keywords</h3>
-    ${chipRow(resume.matchedKeywords || [])}
-
-    <h3>Missing / Weak Keywords</h3>
-    ${chipRow(resume.missingKeywords || [], true)}
-
-    <h3>Selected Projects</h3>
-    <ol>${(resume.selectedProjects || []).map(project => `<li><strong>${escapeHtml(project.title || "")}</strong> — ${escapeHtml(arrayToText(project.technologies))}</li>`).join("")}</ol>
-
-    <h3>Selected Certificates</h3>
-    <ol>${(resume.selectedCertificates || []).map(cert => `<li><strong>${escapeHtml(cert.title || "")}</strong> — ${escapeHtml(cert.reason || cert.issuer || "")}</li>`).join("")}</ol>
-
-    <h3>Suggestions</h3>
-    ${htmlBullets(resume.suggestions || [])}
-  `;
-}
-
-function chipRow(items, missing = false) {
-  const list = (items || []).filter(Boolean);
-  if (!list.length) return `<p class="note">None.</p>`;
-  return `<div class="chip-row">${list.map(item => {
-    if (missing) {
-      const safeItem = escapeHtml(item).replace(/'/g, "\\'");
-      return `<span class="chip missing" title="Click to add this missing skill" onclick="showAddMissingSkillMenu(event, '${safeItem}')">${escapeHtml(item)} <i class="fas fa-plus-circle" style="font-size:0.65rem; margin-left:3px;"></i></span>`;
-    } else {
-      return `<span class="chip">${escapeHtml(item)}</span>`;
-    }
-  }).join("")}</div>`;
-}
-
-function collectData() {
-  // 1. Core Target Counts
-  if (document.getElementById("jobTitle")) draftData.jobTitle = valueOf("jobTitle");
-  if (document.getElementById("projectCount")) draftData.projectCount = clampInt(valueOf("projectCount"), 1, 8, 3);
-  if (document.getElementById("certificateCount")) draftData.certificateCount = clampInt(valueOf("certificateCount"), 0, 8, 3);
-  if (document.getElementById("achievementCount")) draftData.achievementCount = clampInt(valueOf("achievementCount"), 0, 8, 3);
-  if (document.getElementById("skillsPerCategory")) draftData.skillsPerCategory = clampInt(valueOf("skillsPerCategory"), 3, 12, 6);
-
-  // 2. Personal Details
-  if (document.getElementById("name")) draftData.name = valueOf("name");
-  if (document.getElementById("email")) draftData.email = valueOf("email");
-  if (document.getElementById("phone")) draftData.phone = valueOf("phone");
-  if (document.getElementById("github")) draftData.github = valueOf("github");
-  if (document.getElementById("linkedin")) draftData.linkedin = valueOf("linkedin");
-  if (document.getElementById("leetcode")) draftData.leetcode = valueOf("leetcode");
-
-  // 3. Dynamic Card Lists
-  if (document.getElementById("educationContainer") && elements.educationContainer) {
-    draftData.education = collectCards("educationContainer", ["institution", "location", "degree", "duration"]);
-  }
-  if (document.getElementById("experienceContainer") && elements.experienceContainer) {
-    draftData.experience = collectCards("experienceContainer", ["role", "duration", "company", "location", "bullets"]);
-  }
-  if (document.getElementById("patentContainer") && elements.patentContainer) {
-    draftData.patents = collectCards("patentContainer", ["title", "detail"]);
-  }
-  if (document.getElementById("projectsContainer") && elements.projectsContainer) {
-    draftData.projects = collectCards("projectsContainer", ["title", "technologies", "description", "features", "metrics", "link"]);
-  }
-  if (document.getElementById("certificatesContainer") && elements.certificatesContainer) {
-    draftData.certificates = collectCards("certificatesContainer", ["title", "issuer", "date", "skills"]);
-  }
-  if (document.getElementById("achievementsContainer") && elements.achievementsContainer) {
-    draftData.achievements = collectCards("achievementsContainer", ["text"]).map(item => item.text).filter(Boolean);
+  if (!apiKey) {
+    setTimeout(() => {
+      let polished = targetText;
+      if (targetText.includes("Created web") || targetText.includes("made web")) {
+        polished = "Architected and deployed a responsive web portal, enhancing server response times by 20% and driving a 15% increase in user retention.";
+      } else if (targetText.includes("worked on") || targetText.includes("did data")) {
+        polished = "Streamlined data engineering pipelines, increasing query execution efficiency by 35% using index tuning and caching layers.";
+      } else {
+        polished = targetText
+          .replace(/\b(created|made)\b/gi, "engineered")
+          .replace(/\b(helped|assisted)\b/gi, "spearheaded")
+          .replace(/\b(improved|made better)\b/gi, "optimized")
+          .replace(/\b(worked on)\b/gi, "architected");
+      }
+      
+      if (selectedText) {
+        editor.replaceSelection(polished);
+      } else {
+        els.aiPromptTextarea.value = polished;
+      }
+      els.aiPolishBtn.disabled = false;
+      els.aiPolishBtn.innerHTML = '<i class="fas fa-sparkles"></i> Polish Content';
+      alert("Local heuristic polish complete. For neural Gemini results, enter your Google Gemini API Key in the sidebar.");
+      compileLatex();
+    }, 1200);
+    return;
   }
 
-  // 4. Technical Skills
-  if (document.getElementById("skillsLanguages")) {
-    draftData.skills = {
-      languages: valueOf("skillsLanguages"),
-      frameworks: valueOf("skillsFrameworks"),
-      databases: valueOf("skillsDatabases"),
-      tools: valueOf("skillsTools"),
-      core: valueOf("skillsCore")
-    };
-  }
-
-  // 5. Job Description
-  if (document.getElementById("jobDescription")) draftData.jobDescription = valueOf("jobDescription");
-
-  return draftData;
-}
-
-function collectCards(containerId, fields) {
-  const container = document.getElementById(containerId);
-  if (!container) return [];
-  return [...container.querySelectorAll(".dynamic-card")].map(card => {
-    const item = {};
-    fields.forEach(field => {
-      const input = card.querySelector(`[data-field="${field}"]`);
-      item[field] = input ? input.value.trim() : "";
+  try {
+    const promptText = `You are an expert LaTeX writing assistant. Enhance this content to be highly professional, structured, and grammatically perfect. Ensure that any LaTeX formatting commands inside the selection (like \\section, \\begin, \\item, \\textbf, \\%, etc.) are preserved exactly. Only return the polished text/code inside a plain response without markdown wraps. Here is the input:\n\n${targetText}`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
     });
-    return item;
-  }).filter(item => Object.values(item).some(Boolean));
-}
-
-function valueOf(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : "";
-}
-
-function clampInt(value, min, max, fallback) {
-  const number = Number.parseInt(value, 10);
-  if (Number.isNaN(number)) return fallback;
-  return Math.max(min, Math.min(max, number));
-}
-
-function setBusy(isBusy) {
-  const submitBtn = elements.form ? elements.form.querySelector("button[type='submit']") : null;
-  [submitBtn, elements.generateLocalBtn, elements.loadSampleBtn].forEach(button => {
-    if (button) button.disabled = isBusy;
-  });
-}
-
-function showStatus(message, isError = false, isSuccess = false) {
-  if (!elements.status) return;
-  elements.status.textContent = message;
-  elements.status.classList.toggle("error", isError);
-  elements.status.classList.toggle("success", isSuccess);
-}
-
-function activateTab(tabName) {
-  if (!document.getElementById(`${tabName}Tab`)) return;
-  document.querySelectorAll(".tab").forEach(button => button.classList.toggle("active", button.dataset.tab === tabName));
-  document.querySelectorAll(".tab-content").forEach(section => section.classList.remove("active"));
-  document.getElementById(`${tabName}Tab`).classList.add("active");
-}
-
-function addEducation(data = {}) {
-  if (!elements.educationContainer) return;
-  addCard(elements.educationContainer, "Education", [
-    { field: "institution", label: "Institution", placeholder: "SRM University", value: data.institution },
-    { field: "location", label: "Location", placeholder: "Amaravati, Andhra Pradesh", value: data.location },
-    { field: "degree", label: "Degree / Details", placeholder: "B.Tech in CSE; CGPA: 7.57/10.0", value: data.degree },
-    { field: "duration", label: "Duration", placeholder: "Jun 2021 -- May 2025", value: data.duration }
-  ], "two");
-}
-
-function addExperience(data = {}) {
-  if (!elements.experienceContainer) return;
-  addCard(elements.experienceContainer, "Experience", [
-    { field: "role", label: "Role", placeholder: "Software Engineering Intern", value: data.role },
-    { field: "duration", label: "Duration", placeholder: "May 2024 -- Jul 2024", value: data.duration },
-    { field: "company", label: "Company", placeholder: "Company name", value: data.company },
-    { field: "location", label: "Location", placeholder: "City, State", value: data.location },
-    { field: "bullets", label: "Bullet points", placeholder: "One bullet per line", value: data.bullets, textarea: true, full: true }
-  ], "two");
-}
-
-function escapeHtml(value) {
-  if (value === null || value === undefined) return "";
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function addPatent(data = {}) {
-  if (!elements.patentContainer) return;
-  addCard(elements.patentContainer, "Patent / Publication", [
-    { field: "title", label: "Title", placeholder: "Patent or publication title", value: data.title, full: true },
-    { field: "detail", label: "Details", placeholder: "Patent approved / publication details", value: data.detail, textarea: true, full: true }
-  ], "two");
-}
-
-function addProject(data = {}) {
-  if (!elements.projectsContainer) return;
-  addCard(elements.projectsContainer, "Project", [
-    { field: "title", label: "Project Title", placeholder: "AI-Powered Documentation ChatBot", value: data.title },
-    { field: "technologies", label: "Technologies", placeholder: "Python, React, FastAPI, RAG", value: data.technologies },
-    { field: "description", label: "Description", placeholder: "Short project description", value: data.description, textarea: true, full: true },
-    { field: "features", label: "Features", placeholder: "Feature list, comma-separated or line-by-line", value: data.features, textarea: true, full: true },
-    { field: "metrics", label: "Metrics / Results", placeholder: "Example: 90% accuracy, 1,000+ pages processed", value: data.metrics },
-    { field: "link", label: "Project Link", placeholder: "GitHub or live demo link", value: data.link }
-  ], "two");
-}
-
-function addCertificate(data = {}) {
-  if (!elements.certificatesContainer) return;
-  addCard(elements.certificatesContainer, "Certificate", [
-    { field: "title", label: "Certificate Title", placeholder: "Machine Learning Specialization", value: data.title },
-    { field: "issuer", label: "Issuer", placeholder: "Coursera", value: data.issuer },
-    { field: "date", label: "Date", placeholder: "2024", value: data.date },
-    { field: "skills", label: "Related Skills", placeholder: "Machine Learning, Python, model evaluation", value: data.skills },
-    { field: "link", label: "Credential Link (Optional)", placeholder: "e.g. Credly URL or verify link", value: data.link }
-  ], "two");
-}
-
-function addAchievement(data = {}) {
-  if (!elements.achievementsContainer) return;
-  addCard(elements.achievementsContainer, "Achievement", [
-    { field: "text", label: "Achievement", placeholder: "LeetCode -- Solved 350+ problems", value: data.text || data, full: true }
-  ], "two");
-}
-
-function addCard(container, title, fields, gridClass) {
-  const index = container.querySelectorAll(".dynamic-card").length + 1;
-  const card = document.createElement("div");
-  card.className = "dynamic-card";
-  card.innerHTML = `
-    <div class="dynamic-card-header">
-      <strong>${title} ${index}</strong>
-      <button type="button" class="ghost-btn remove-btn" aria-label="Remove ${escapeHtml(title)} ${index}">Remove</button>
-    </div>
-    <div class="grid ${gridClass}">
-      ${fields.map(field => fieldTemplate(field)).join("")}
-    </div>
-  `;
-  card.querySelector(".remove-btn").addEventListener("click", () => {
-    card.remove();
-    saveDraftToLocal();
-  });
-  container.appendChild(card);
-}
-
-function fieldTemplate(field) {
-  const cls = field.full ? "full-width" : "";
-  const value = escapeHtml(field.value || "");
-  if (field.textarea) {
-    return `<label class="${cls}">${field.label}<textarea data-field="${field.field}" placeholder="${escapeHtml(field.placeholder || "")}">${value}</textarea></label>`;
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Gemini API request failed.");
+    }
+    
+    let polished = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (polished) {
+      polished = polished.trim();
+      if (polished.startsWith("```")) {
+        polished = polished.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
+      }
+      if (selectedText) {
+        editor.replaceSelection(polished);
+      } else {
+        els.aiPromptTextarea.value = polished;
+      }
+      compileLatex();
+      alert("Success! LaTeX content polished with Gemini AI.");
+    } else {
+      throw new Error("Empty response received from Gemini.");
+    }
+  } catch (err) {
+    alert(`Gemini Error: ${err.message}`);
+  } finally {
+    els.aiPolishBtn.disabled = false;
+    els.aiPolishBtn.innerHTML = '<i class="fas fa-sparkles"></i> Polish Content';
   }
-  return `<label class="${cls}">${field.label}<input data-field="${field.field}" placeholder="${escapeHtml(field.placeholder || "")}" value="${value}" /></label>`;
 }
 
-function loadSampleData() {
-  clearForm(false);
+// 13. Bi-directional LaTeX to Form Parser
+function extractArguments(latexText, startIndex) {
+  let curr = startIndex;
+  const args = [];
   
-  draftData.jobTitle = SAMPLE_DATA.jobTitle;
-  draftData.projectCount = SAMPLE_DATA.projectCount;
-  draftData.certificateCount = SAMPLE_DATA.certificateCount;
-  draftData.name = SAMPLE_DATA.name;
-  draftData.email = SAMPLE_DATA.email;
-  draftData.phone = SAMPLE_DATA.phone;
-  draftData.github = SAMPLE_DATA.github;
-  draftData.linkedin = SAMPLE_DATA.linkedin;
-  draftData.leetcode = SAMPLE_DATA.leetcode;
-  
-  draftData.skills = {
-    languages: SAMPLE_DATA.skills.languages,
-    frameworks: SAMPLE_DATA.skills.frameworks,
-    databases: SAMPLE_DATA.skills.databases,
-    tools: SAMPLE_DATA.skills.tools,
-    core: SAMPLE_DATA.skills.core
-  };
-  draftData.jobDescription = SAMPLE_DATA.jobDescription;
-  draftData.education = SAMPLE_DATA.education;
-  draftData.experience = SAMPLE_DATA.experience;
-  draftData.patents = SAMPLE_DATA.patents;
-  draftData.projects = SAMPLE_DATA.projects;
-  draftData.certificates = SAMPLE_DATA.certificates;
-  draftData.achievements = SAMPLE_DATA.achievements;
-
-  localStorage.setItem("draftResumeData", JSON.stringify(draftData));
-  populateFormFields(draftData);
-  
-  showStatus("Sample data loaded. Navigating to Step 3.", false, true);
-  
-  setTimeout(() => {
-    window.location.href = "ai.html";
-  }, 300);
-}
-
-function setValue(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.value = value || "";
-}
-
-function clearForm(addEmpty = true) {
-  if (elements.form) elements.form.reset();
-  
-  if (elements.educationContainer) elements.educationContainer.innerHTML = "";
-  if (elements.experienceContainer) elements.experienceContainer.innerHTML = "";
-  if (elements.patentContainer) elements.patentContainer.innerHTML = "";
-  if (elements.projectsContainer) elements.projectsContainer.innerHTML = "";
-  if (elements.certificatesContainer) elements.certificatesContainer.innerHTML = "";
-  if (elements.achievementsContainer) elements.achievementsContainer.innerHTML = "";
-  
-  setValue("projectCount", 3);
-  setValue("certificateCount", 3);
-
-  if (addEmpty) {
-    addEducation();
-    addExperience();
-    addPatent();
-    addProject();
-    addCertificate();
-    addAchievement();
+  while (curr < latexText.length) {
+    while (curr < latexText.length && /\s/.test(latexText[curr])) {
+      curr++;
+    }
+    if (latexText[curr] !== '{') {
+      break;
+    }
+    let start = curr + 1;
+    let braceCount = 1;
+    curr++;
+    
+    while (curr < latexText.length && braceCount > 0) {
+      if (latexText[curr] === '{') braceCount++;
+      else if (latexText[curr] === '}') braceCount--;
+      curr++;
+    }
+    
+    if (braceCount === 0) {
+      args.push(latexText.slice(start, curr - 1));
+    } else {
+      break;
+    }
   }
+  return { args, nextIndex: curr };
+}
 
-  latestLatex = "";
-  latestJson = null;
+function parseLatexToForm(latex) {
+  if (!latex) return null;
   
-  if (elements.resumePreview) {
-    elements.resumePreview.innerHTML = "Generated resume preview will appear here. Enter details and generate to start.";
-    elements.resumePreview.classList.add("empty-state");
-  }
-  if (elements.latexOutput) elements.latexOutput.textContent = "LaTeX output will appear here.";
-  if (elements.analysisOutput) elements.analysisOutput.textContent = "JD analysis details will appear here.";
-  if (elements.atsScore) elements.atsScore.textContent = "--";
-  if (elements.selectedCounts) elements.selectedCounts.textContent = "--";
-
-  draftData = {
-    jobTitle: "",
-    projectCount: 3,
-    certificateCount: 3,
+  const cleanCode = latex;
+  const data = {
     name: "",
     email: "",
     phone: "",
@@ -1030,550 +1932,431 @@ function clearForm(addEmpty = true) {
     leetcode: "",
     education: [],
     experience: [],
-    patents: [],
     projects: [],
     certificates: [],
-    achievements: [],
-    skills: { languages: "", frameworks: "", databases: "", tools: "", core: "" },
-    jobDescription: ""
+    skills: []
   };
-  localStorage.removeItem("draftResumeData");
-  
-  setupInteractiveSkillsEditor();
-  showStatus("Form cleared.");
-}
 
-function downloadTex() {
-  if (!latestLatex) return showStatus("Generate a resume first.", true);
-  downloadFile(latestLatex, "generated-resume.tex", "application/x-tex");
-}
-
-function openInOverleaf() {
-  if (!latestLatex) return showStatus("Generate a resume first.", true);
-  
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "https://www.overleaf.com/docs";
-  form.target = "_blank";
-  
-  const textarea = document.createElement("textarea");
-  textarea.name = "snip";
-  textarea.value = latestLatex;
-  form.appendChild(textarea);
-  
-  const inputName = document.createElement("input");
-  inputName.name = "name";
-  inputName.value = "ResuCraft_AI_Resume.tex";
-  form.appendChild(inputName);
-  
-  document.body.appendChild(form);
-  form.submit();
-  document.body.removeChild(form);
-  showStatus("Opening LaTeX code in Overleaf...", false, true);
-}
-
-async function copyLatex() {
-  if (!latestLatex) return showStatus("Generate a resume first.", true);
-  await navigator.clipboard.writeText(latestLatex);
-  showStatus("LaTeX copied to clipboard.", false, true);
-}
-
-function downloadJson() {
-  if (!latestJson) return showStatus("Generate a resume first.", true);
-  downloadFile(JSON.stringify(latestJson, null, 2), "resume-analysis.json", "application/json");
-}
-
-function downloadFile(content, filename, type) {
-  const blob = new Blob([content], { type });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(link.href);
-}
-
-// ==========================================
-// 🛠️ Interactive Skills Tag Editor & ATS Popover
-// ==========================================
-
-function setupInteractiveSkillsEditor(categories = null) {
-  if (!categories) {
-    if (currentStep === 5) return; // Exit early, renderTuningDashboard will build them!
-    categories = [];
-    const textareas = document.querySelectorAll("textarea[id^='skills']");
-    textareas.forEach(textarea => {
-      const id = textarea.id;
-      const label = textarea.getAttribute("data-label") || id.replace("skills", "");
-      const key = textarea.getAttribute("data-key") || label.toLowerCase();
-      categories.push({ id, label, key });
-    });
+  function cleanVal(str) {
+    if (!str) return "";
+    let s = str.trim();
+    s = s.replace(/\\href\{[^}]*\}\{([^}]*)\}/g, '$1');
+    s = s.replace(/\\underline\{([^}]*)\}/g, '$1');
+    s = s.replace(/\\textbf\{([^}]*)\}/g, '$1');
+    s = s.replace(/\\emph\{([^}]*)\}/g, '$1');
+    s = s.replace(/\\&/g, '&')
+         .replace(/\\_/g, '_')
+         .replace(/\\\$/g, '$')
+         .replace(/\\%/g, '%')
+         .replace(/\\#/g, '#')
+         .replace(/\\\{/g, '{')
+         .replace(/\\\}/g, '}')
+         .replace(/\\textbackslash\{\}/g, '\\');
+    return s.trim();
   }
 
-  // Clear existing editors for these categories to prevent duplicates
-  categories.forEach(cat => {
-    const textarea = document.getElementById(cat.id);
-    if (textarea) {
-      const stale = textarea.parentNode.querySelector(".skills-tag-editor");
-      if (stale) stale.remove();
+  // 1. Header parsing
+  const nameMatch = cleanCode.match(/\\textbf\s*\{\s*\\Huge\s*(?:\\scshape\s*)?\{?([^{}]+)\}?\}/i);
+  if (nameMatch) {
+    data.name = cleanVal(nameMatch[1]);
+  } else {
+    const hugeMatch = cleanCode.match(/\\Huge\s+([^\n\\}]+)/i);
+    if (hugeMatch) data.name = cleanVal(hugeMatch[1]);
+  }
+
+  const lines = cleanCode.split("\n");
+  lines.forEach(line => {
+    if (line.includes("href") || line.includes("mailto") || line.includes("@") || line.includes("linkedin") || line.includes("github")) {
+      const parts = line.split(/\|\s*~?|~\s*\|\s*|\\hfill/);
+      parts.forEach(part => {
+        const cleanPart = part.trim();
+        if (cleanPart.includes("mailto:")) {
+          const emailMatch = cleanPart.match(/mailto:([^}]+)/);
+          if (emailMatch) data.email = cleanVal(emailMatch[1]);
+        } else if (cleanPart.includes("linkedin.com")) {
+          const liMatch = cleanPart.match(/href\{([^}]+)\}/);
+          if (liMatch) data.linkedin = cleanVal(liMatch[1]);
+        } else if (cleanPart.includes("github.com")) {
+          const ghMatch = cleanPart.match(/href\{([^}]+)\}/);
+          if (ghMatch) data.github = cleanVal(ghMatch[1]);
+        } else if (cleanPart.includes("leetcode.com")) {
+          const lcMatch = cleanPart.match(/href\{([^}]+)\}/);
+          if (lcMatch) data.leetcode = cleanVal(lcMatch[1]);
+        } else if (cleanPart.includes("@")) {
+          const atMatch = cleanPart.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+          if (atMatch) data.email = atMatch[1];
+        } else {
+          const stripPart = cleanPart.replace(/\\small\s+/g, "").replace(/[{}\\]/g, "").trim();
+          if (/^\+?[\d\s-]{7,20}$/.test(stripPart)) {
+            data.phone = stripPart;
+          }
+        }
+      });
     }
   });
 
-  categories.forEach(cat => {
-    const textarea = document.getElementById(cat.id);
-    if (!textarea) return;
-
-    // Hide original textarea
-    textarea.style.display = "none";
-
-    // Check if editor already exists
-    let editor = textarea.parentNode.querySelector(".skills-tag-editor");
-    if (!editor) {
-      editor = document.createElement("div");
-      editor.className = "skills-tag-editor";
-      editor.setAttribute("data-for", cat.id);
-      editor.setAttribute("data-key", cat.key);
-      editor.innerHTML = `
-        <div class="tag-list"></div>
-        <div class="tag-input-row">
-          <input type="text" class="new-tag-input" placeholder="Add skill..." />
-          <button type="button" class="primary-btn add-tag-btn">+</button>
-        </div>
-        <div class="missing-skills-helper" style="display: none;">
-          <span class="helper-label">Add missing:</span>
-          <div class="helper-chips"></div>
-        </div>
-      `;
-      textarea.parentNode.appendChild(editor);
-
-      // Event listener for adding tag
-      const input = editor.querySelector(".new-tag-input");
-      const addBtn = editor.querySelector(".add-tag-btn");
-
-      const handleAdd = () => {
-        const val = input.value.trim();
-        if (val) {
-          addTagToEditor(editor, val);
-          input.value = "";
-        }
-      };
-
-      addBtn.addEventListener("click", handleAdd);
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handleAdd();
-        }
-      });
-      input.addEventListener("input", () => {
-        const val = input.value;
-        if (val.includes(",")) {
-          const parts = val.split(",");
-          const lastPart = parts.pop();
-          parts.forEach(part => {
-            const trimmed = part.trim();
-            if (trimmed) {
-              addTagToEditor(editor, trimmed);
-            }
-          });
-          input.value = lastPart;
-        }
-      });
-      input.addEventListener("blur", handleAdd);
-    }
-
-    // Populate tags from textarea value
-    renderTagsFromTextarea(editor, textarea.value);
+  function getSectionContent(secName) {
+    let aliases = [secName];
+    const secLower = secName.toLowerCase();
     
-    // Render helper missing skills in form
-    renderMissingSkillsHelper(editor);
-  });
-}
+    if (secLower === "experience") {
+      aliases = ["experience", "e\\\\xperience", "work experience", "professional experience"];
+    } else if (secLower === "education") {
+      aliases = ["education", "academic background"];
+    } else if (secLower === "projects") {
+      aliases = ["projects", "personal projects", "selected projects", "academic projects"];
+    } else if (secLower === "certificates") {
+      aliases = ["certificates", "certifications", "licenses"];
+    } else if (secLower === "skills" || secLower === "technical skills") {
+      aliases = ["technical skills", "skills", "technical expertise"];
+    }
+    
+    const patternStr = `\\\\section\\{(?:${aliases.join("|")})\\}([\\s\\S]*?)(?=\\\\section|\\\\end\\{document\\}|$)`;
+    const regex = new RegExp(patternStr, "i");
+    const match = cleanCode.match(regex);
+    return match ? match[1] : "";
+  }
 
-function renderTagsFromTextarea(editor, textValue) {
-  const tagList = editor.querySelector(".tag-list");
-  tagList.innerHTML = "";
-  
-  const tags = String(textValue || "")
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  tags.forEach(tag => {
-    const tagEl = createTagElement(editor, tag);
-    tagList.appendChild(tagEl);
-  });
-}
-
-function createTagElement(editor, tagText) {
-  const tagEl = document.createElement("span");
-  tagEl.className = "tag-item";
-  tagEl.setAttribute("draggable", "true");
-  
-  const textSpan = document.createElement("span");
-  textSpan.className = "tag-text";
-  textSpan.textContent = tagText;
-  tagEl.appendChild(textSpan);
-
-  // Edit inline on click
-  textSpan.addEventListener("click", () => {
-    const input = document.createElement("input");
-    input.className = "tag-edit-input";
-    input.value = textSpan.textContent;
-    tagEl.replaceChild(input, textSpan);
-    input.focus();
-
-    const saveEdit = () => {
-      const newVal = input.value.trim();
-      if (newVal) {
-        textSpan.textContent = newVal;
-        tagEl.replaceChild(textSpan, input);
-        updateTextareaFromEditor(editor);
-      } else {
-        tagEl.remove();
-        updateTextareaFromEditor(editor);
+  // 2. Education parsing
+  const eduContent = getSectionContent("Education");
+  if (eduContent) {
+    let idx = 0;
+    while (true) {
+      idx = eduContent.indexOf("\\resumeSubheading", idx);
+      if (idx === -1) break;
+      
+      const { args, nextIndex } = extractArguments(eduContent, idx + "\\resumeSubheading".length);
+      if (args.length >= 4) {
+        data.education.push({
+          institution: cleanVal(args[0]),
+          location: cleanVal(args[1]),
+          degree: cleanVal(args[2]),
+          duration: cleanVal(args[3])
+        });
       }
+      idx = nextIndex;
+    }
+  }
+
+  // 3. Experience parsing
+  const expContent = getSectionContent("Experience");
+  if (expContent) {
+    let idx = 0;
+    while (true) {
+      idx = expContent.indexOf("\\resumeSubheading", idx);
+      if (idx === -1) break;
+      
+      const { args, nextIndex } = extractArguments(expContent, idx + "\\resumeSubheading".length);
+      idx = nextIndex;
+      
+      if (args.length >= 4) {
+        const endOfBlock = expContent.indexOf("\\resumeSubheading", nextIndex);
+        const blockText = expContent.slice(nextIndex, endOfBlock === -1 ? expContent.length : endOfBlock);
+        
+        const bullets = [];
+        let bIdx = 0;
+        while (true) {
+          bIdx = blockText.indexOf("\\resumeItem", bIdx);
+          if (bIdx === -1) break;
+          const bArgs = extractArguments(blockText, bIdx + "\\resumeItem".length);
+          if (bArgs.args.length >= 1) {
+            bullets.push(cleanVal(bArgs.args[0]));
+          }
+          bIdx = bArgs.nextIndex;
+        }
+        
+        data.experience.push({
+          company: cleanVal(args[2]),
+          location: cleanVal(args[3]),
+          role: cleanVal(args[0]),
+          duration: cleanVal(args[1]),
+          bullets: bullets
+        });
+      }
+    }
+  }
+
+  // 4. Projects parsing
+  const projContent = getSectionContent("Projects");
+  if (projContent) {
+    let idx = 0;
+    while (true) {
+      idx = projContent.indexOf("\\resumeProjectHeading", idx);
+      if (idx === -1) break;
+      
+      const { args, nextIndex } = extractArguments(projContent, idx + "\\resumeProjectHeading".length);
+      idx = nextIndex;
+      
+      if (args.length >= 2) {
+        const titleAndTech = args[0];
+        const date = args[1];
+        
+        let title = "";
+        let tech = "";
+        const parts = titleAndTech.split(/\|\s*~?|~\s*\|\s*/);
+        if (parts.length >= 2) {
+          title = cleanVal(parts[0]);
+          tech = cleanVal(parts[1]);
+        } else {
+          title = cleanVal(titleAndTech);
+        }
+        
+        const endOfBlock = projContent.indexOf("\\resumeProjectHeading", nextIndex);
+        const blockText = projContent.slice(nextIndex, endOfBlock === -1 ? projContent.length : endOfBlock);
+        
+        const bullets = [];
+        let bIdx = 0;
+        while (true) {
+          bIdx = blockText.indexOf("\\resumeItem", bIdx);
+          if (bIdx === -1) break;
+          const bArgs = extractArguments(blockText, bIdx + "\\resumeItem".length);
+          if (bArgs.args.length >= 1) {
+            bullets.push(cleanVal(bArgs.args[0]));
+          }
+          bIdx = bArgs.nextIndex;
+        }
+        
+        data.projects.push({
+          title: title,
+          technologies: tech,
+          date: cleanVal(date),
+          bullets: bullets
+        });
+      }
+    }
+  }
+
+  // 5. Certificates parsing
+  const certContent = getSectionContent("Certificates");
+  if (certContent) {
+    let idx = 0;
+    while (true) {
+      idx = certContent.indexOf("\\resumeProjectHeading", idx);
+      if (idx === -1) break;
+      
+      const { args, nextIndex } = extractArguments(certContent, idx + "\\resumeProjectHeading".length);
+      idx = nextIndex;
+      
+      if (args.length >= 2) {
+        const titleAndIssuer = args[0];
+        const date = args[1];
+        
+        let title = "";
+        let issuer = "";
+        const parts = titleAndIssuer.split(/\|\s*~?|~\s*\|\s*/);
+        if (parts.length >= 2) {
+          title = cleanVal(parts[0]);
+          issuer = cleanVal(parts[1]);
+        } else {
+          title = cleanVal(titleAndIssuer);
+        }
+        
+        data.certificates.push({
+          title: title,
+          issuer: issuer,
+          date: cleanVal(date)
+        });
+      }
+    }
+  }
+
+  // 6. Skills parsing
+  const skillsContent = getSectionContent("Technical Skills");
+  if (skillsContent) {
+    const skillRegex = /\\textbf\{([^}]+)\}\s*\{:\s*([^\n\\}]+)\}/g;
+    let match;
+    while ((match = skillRegex.exec(skillsContent)) !== null) {
+      data.skills.push({
+        label: cleanVal(match[1]),
+        value: match[2].trim()
+      });
+    }
+  }
+
+  // 7. Find all other custom sections
+  const knownSectionNames = ["education", "experience", "projects", "certificates", "technical skills", "skills"];
+  const allSectionHeaders = [];
+  const sectionHeaderRegex = /\\section\{([^}]+)\}/g;
+  let secMatch;
+  while ((secMatch = sectionHeaderRegex.exec(cleanCode)) !== null) {
+    allSectionHeaders.push(secMatch[1].trim());
+  }
+
+  data.customSections = [];
+
+  allSectionHeaders.forEach(secName => {
+    const secKey = secName.toLowerCase();
+    // Skip known sections
+    if (knownSectionNames.some(k => secKey.includes(k))) return;
+
+    const content = getSectionContent(secName);
+    if (!content) return;
+
+    const customSec = {
+      title: secName,
+      items: []
     };
 
-    input.addEventListener("blur", saveEdit);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        saveEdit();
-      }
-    });
-  });
-
-  const removeBtn = document.createElement("span");
-  removeBtn.className = "tag-remove-btn";
-  removeBtn.innerHTML = "&times;";
-  removeBtn.setAttribute("role", "button");
-  removeBtn.setAttribute("aria-label", `Delete skill tag ${tagText}`);
-  removeBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    tagEl.remove();
-    updateTextareaFromEditor(editor);
-  });
-  tagEl.appendChild(removeBtn);
-
-  // Drag and Drop reordering logic for skill tags
-  tagEl.addEventListener("dragstart", (e) => {
-    tagDragSrcEl = tagEl;
-    e.dataTransfer.effectAllowed = "move";
-    tagEl.classList.add("dragging");
-  });
-
-  tagEl.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    return false;
-  });
-
-  tagEl.addEventListener("dragenter", (e) => {
-    if (tagEl !== tagDragSrcEl) {
-      tagEl.classList.add("drag-over");
-    }
-  });
-
-  tagEl.addEventListener("dragleave", () => {
-    tagEl.classList.remove("drag-over");
-  });
-
-  tagEl.addEventListener("drop", (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    if (tagEl !== tagDragSrcEl && tagDragSrcEl) {
-      const container = tagEl.parentNode;
-      const allTags = [...container.querySelectorAll(".tag-item")];
-      const srcIdx = allTags.indexOf(tagDragSrcEl);
-      const destIdx = allTags.indexOf(tagEl);
-      
-      if (srcIdx < destIdx) {
-        container.insertBefore(tagDragSrcEl, tagEl.nextSibling);
-      } else {
-        container.insertBefore(tagDragSrcEl, tagEl);
-      }
-      
-      updateTextareaFromEditor(editor);
-    }
-  });
-
-  tagEl.addEventListener("dragend", () => {
-    document.querySelectorAll(".tag-item").forEach(item => {
-      item.classList.remove("dragging");
-      item.classList.remove("drag-over");
-    });
-    tagDragSrcEl = null;
-  });
-
-  return tagEl;
-}
-
-function addTagToEditor(editor, tagText) {
-  const tagList = editor.querySelector(".tag-list");
-  const existingTags = [...tagList.querySelectorAll(".tag-text")].map(el => el.textContent.toLowerCase());
-  
-  const subTags = tagText.split(",").map(t => t.trim()).filter(Boolean);
-  let addedAny = false;
-
-  subTags.forEach(subText => {
-    if (!existingTags.includes(subText.toLowerCase())) {
-      const tagEl = createTagElement(editor, subText);
-      tagList.appendChild(tagEl);
-      existingTags.push(subText.toLowerCase());
-      addedAny = true;
-    }
-  });
-
-  if (addedAny) {
-    updateTextareaFromEditor(editor);
-  }
-}
-
-function updateTextareaFromEditor(editor) {
-  const textareaId = editor.getAttribute("data-for");
-  const categoryKey = editor.getAttribute("data-key");
-  const textarea = document.getElementById(textareaId);
-  if (!textarea) return;
-
-  const tags = [...editor.querySelectorAll(".tag-text")].map(el => el.textContent.trim()).filter(Boolean);
-  const textVal = tags.join(", ");
-  textarea.value = textVal;
-
-  // Update memory
-  if (!draftData.skills) {
-    draftData.skills = { languages: "", frameworks: "", databases: "", tools: "", core: "" };
-  }
-  draftData.skills[categoryKey] = textVal;
-  localStorage.setItem("draftResumeData", JSON.stringify(draftData));
-  
-  // Dispatch input event to trigger auto-saving
-  textarea.dispatchEvent(new Event("input", { bubbles: true }));
-  
-  // If we are on output page or ATS Tuning page, auto refresh the resume and ATS score in real-time
-  if (currentStep === 4 || currentStep === 5) {
-    triggerAutoRecompute();
-  }
-}
-
-function renderMissingSkillsHelper(editor) {
-  const helperSection = editor.querySelector(".missing-skills-helper");
-  const helperChips = editor.querySelector(".helper-chips");
-  
-  helperSection.style.display = "none";
-  helperChips.innerHTML = "";
-
-  const savedJson = localStorage.getItem("latestResumeResultData");
-  if (!savedJson) return;
-
-  try {
-    const data = JSON.parse(savedJson);
-    const missing = data.resume?.missingKeywords || [];
-    if (!missing.length) return;
-
-    // Show only keywords that aren't already in the editor
-    const currentTags = [...editor.querySelectorAll(".tag-text")].map(el => el.textContent.toLowerCase());
-    const relevantMissing = missing.filter(keyword => !currentTags.includes(keyword.toLowerCase()));
-
-    if (!relevantMissing.length) return;
-
-    helperSection.style.display = "flex";
-    relevantMissing.slice(0, 5).forEach(keyword => {
-      const chip = document.createElement("span");
-      chip.className = "helper-chip";
-      chip.textContent = `+ ${keyword}`;
-      chip.addEventListener("click", () => {
-        addTagToEditor(editor, keyword);
-        renderMissingSkillsHelper(editor); // Update helper state
-      });
-      helperChips.appendChild(chip);
-    });
-  } catch (err) {
-    console.error("Failed to render missing skills helper:", err);
-  }
-}
-
-// Global popover modal to add missing skill to any category
-function showAddMissingSkillMenu(event, skillName) {
-  event.stopPropagation();
-  
-  // Remove existing modals
-  const existing = document.querySelector(".skill-add-modal");
-  if (existing) existing.remove();
-
-  const modal = document.createElement("div");
-  modal.className = "skill-add-modal";
-  modal.style.top = `${event.pageY + 10}px`;
-  modal.style.left = `${event.pageX + 10}px`;
-
-  const categories = [];
-  document.querySelectorAll("textarea[id^='skills']").forEach(textarea => {
-    const id = textarea.id;
-    const label = textarea.getAttribute("data-label") || id.replace("skills", "");
-    const key = textarea.getAttribute("data-key") || label.toLowerCase();
-    categories.push({ name: label, key, id });
-  });
-
-  if (categories.length === 0) {
-    categories.push(
-      { name: "Languages", key: "languages", id: "skillsLanguages" },
-      { name: "Frameworks & Libraries", key: "frameworks", id: "skillsFrameworks" },
-      { name: "Databases", key: "databases", id: "skillsDatabases" },
-      { name: "Developer Tools", key: "tools", id: "skillsTools" },
-      { name: "Core Competencies", key: "core", id: "skillsCore" }
-    );
-  }
-
-  modal.innerHTML = `<span style="font-size:0.7rem; color:var(--text-muted); font-weight:700; padding:4px 8px; border-bottom:1px solid var(--border);">ADD "${escapeHtml(skillName).toUpperCase()}" TO:</span>`;
-
-  categories.forEach(cat => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = cat.name;
-    btn.addEventListener("click", () => {
-      addSkillToCategory(cat.id, cat.key, skillName);
-      modal.remove();
-    });
-    modal.appendChild(btn);
-  });
-
-  document.body.appendChild(modal);
-
-  // Close when clicking outside
-  const closeHandler = () => {
-    modal.remove();
-    document.removeEventListener("click", closeHandler);
-  };
-  // Wait a tick to bind so the current click doesn't close it instantly
-  setTimeout(() => {
-    document.addEventListener("click", closeHandler);
-  }, 10);
-}
-
-function addSkillToCategory(textareaId, categoryKey, skillName) {
-  // Update memory
-  if (!draftData.skills) {
-    draftData.skills = { languages: "", frameworks: "", databases: "", tools: "", core: "" };
-  }
-  
-  let currentVal = draftData.skills[categoryKey] || "";
-  const existing = currentVal.split(",").map(s => s.trim()).filter(Boolean);
-  
-  const subSkills = skillName.split(",").map(s => s.trim()).filter(Boolean);
-  let addedAny = false;
-
-  subSkills.forEach(sub => {
-    if (!existing.map(s => s.toLowerCase()).includes(sub.toLowerCase())) {
-      existing.push(sub);
-      addedAny = true;
-    }
-  });
-
-  if (addedAny) {
-    draftData.skills[categoryKey] = existing.join(", ");
-    
-    // Save draft
-    localStorage.setItem("draftResumeData", JSON.stringify(draftData));
-    
-    // Update active textarea elements
-    const textarea = document.getElementById(textareaId);
-    if (textarea) {
-      textarea.value = draftData.skills[categoryKey];
-      // Trigger editor rebuild
-      const editor = textarea.parentNode.querySelector(".skills-tag-editor");
-      if (editor) {
-        renderTagsFromTextarea(editor, textarea.value);
-        renderMissingSkillsHelper(editor);
-      }
-    }
-    
-    // Auto recompute resume results
-    triggerAutoRecompute();
-  }
-}
-
-function triggerAutoRecompute() {
-  let isAi = false;
-  let savedResume = null;
-  const savedJson = localStorage.getItem("latestResumeResultData");
-  if (savedJson) {
-    try {
-      const data = JSON.parse(savedJson);
-      if (data.resume && data.resume.isAiGenerated) {
-        isAi = true;
-        savedResume = data.resume;
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  const resume = isAi ? { ...savedResume } : generateLocalResume(draftData);
-  
-  if (isAi) {
-    resume.isAiGenerated = true;
-    resume.atsScore = savedResume.atsScore;
-    resume.skills = optimizeSkills(draftData.skills, resume.jdKeywords || []);
-  } else {
-    // Preserve manually selected projects/certificates if present
-    if (savedJson) {
-      try {
-        const data = JSON.parse(savedJson);
-        if (data.resume && Array.isArray(data.resume.selectedProjects)) {
-          resume.selectedProjects = data.resume.selectedProjects;
-        }
-        if (data.resume && Array.isArray(data.resume.selectedCertificates)) {
-          resume.selectedCertificates = data.resume.selectedCertificates;
-        }
+    // Case A: Contains subheadings or project headings
+    if (content.includes("\\resumeProjectHeading") || content.includes("\\resumeSubheading")) {
+      let idx = 0;
+      while (true) {
+        let headingType = "";
+        const projIdx = content.indexOf("\\resumeProjectHeading", idx);
+        const subIdx = content.indexOf("\\resumeSubheading", idx);
         
-        // Re-run ATS scoring based on updated skills and manual selections
-        const jdKeywords = resume.jdKeywords || [];
-        resume.atsScore = estimateDetailedAtsScore(
-          draftData, 
-          resume.selectedProjects, 
-          resume.selectedCertificates, 
-          jdKeywords
-        );
+        if (projIdx === -1 && subIdx === -1) break;
         
-        // Recompute keyword matching metrics
-        const matchedSet = new Set();
-        const missingSet = new Set(jdKeywords);
-        const allSkills = Object.values(draftData.skills || {}).join(", ");
-        
-        const projectsText = resume.selectedProjects.map(p => {
-          const techText = Array.isArray(p.technologies) ? p.technologies.join(" ") : String(p.technologies || "");
-          const bulletsText = Array.isArray(p.bullets) ? p.bullets.join(" ") : String(p.bullets || "");
-          return (p.title || "") + " " + techText + " " + bulletsText;
-        }).join(" ");
-        
-        const certsText = resume.selectedCertificates.map(c => (c.title || "") + " " + (c.reason || c.issuer || "")).join(" ");
-        const expText = (draftData.experience || []).map(e => (e.role || "") + " " + (e.bullets || "")).join(" ");
-        
-        const textContent = (allSkills + " " + projectsText + " " + certsText + " " + expText).toLowerCase();
-        
-        jdKeywords.forEach(kw => {
-          if (textContent.includes(kw.toLowerCase())) {
-            matchedSet.add(kw);
-            missingSet.delete(kw);
+        let foundIdx = -1;
+        if (projIdx !== -1 && subIdx !== -1) {
+          if (projIdx < subIdx) {
+            foundIdx = projIdx;
+            headingType = "project";
+          } else {
+            foundIdx = subIdx;
+            headingType = "subheading";
           }
+        } else if (projIdx !== -1) {
+          foundIdx = projIdx;
+          headingType = "project";
+        } else {
+          foundIdx = subIdx;
+          headingType = "subheading";
+        }
+        
+        const cmdLength = headingType === "project" ? "\\resumeProjectHeading".length : "\\resumeSubheading".length;
+        const { args, nextIndex } = extractArguments(content, foundIdx + cmdLength);
+        
+        let title = "";
+        let subtitle = "";
+        let date = "";
+        
+        if (headingType === "project") {
+          if (args.length >= 2) {
+            const titleAndSub = args[0];
+            date = cleanVal(args[1]);
+            const parts = titleAndSub.split(/\|\s*~?|~\s*\|\s*/);
+            if (parts.length >= 2) {
+              title = cleanVal(parts[0]);
+              subtitle = cleanVal(parts[1]);
+            } else {
+              title = cleanVal(titleAndSub);
+            }
+          }
+        } else {
+          if (args.length >= 4) {
+            title = cleanVal(args[0]);
+            date = cleanVal(args[1]);
+            subtitle = cleanVal(args[2]);
+            const extra = cleanVal(args[3]);
+            if (extra) subtitle += " (" + extra + ")";
+          }
+        }
+        
+        // Find bullets in this item block
+        let endOfBlock = content.indexOf("\\resumeProjectHeading", nextIndex);
+        const subNextIdx = content.indexOf("\\resumeSubheading", nextIndex);
+        if (endOfBlock === -1 || (subNextIdx !== -1 && subNextIdx < endOfBlock)) {
+          endOfBlock = subNextIdx;
+        }
+        
+        const blockText = content.slice(nextIndex, endOfBlock === -1 ? content.length : endOfBlock);
+        const bullets = [];
+        let bIdx = 0;
+        while (true) {
+          bIdx = blockText.indexOf("\\resumeItem", bIdx);
+          if (bIdx === -1) break;
+          const bArgs = extractArguments(blockText, bIdx + "\\resumeItem".length);
+          if (bArgs.args.length >= 1) {
+            bullets.push(cleanVal(bArgs.args[0]));
+          }
+          bIdx = bArgs.nextIndex;
+        }
+        
+        customSec.items.push({
+          title: title,
+          subtitle: subtitle,
+          date: date,
+          bullets: bullets
         });
         
-        resume.matchedKeywords = [...matchedSet];
-        resume.missingKeywords = [...missingSet];
-      } catch (err) {
-        console.error("Failed to preserve manual selections during auto-recompute:", err);
+        idx = nextIndex;
       }
+    } 
+    // Case B: Simple bullet items
+    else if (content.includes("\\resumeItem") || content.includes("\\item")) {
+      const bullets = [];
+      let bIdx = 0;
+      
+      while (true) {
+        bIdx = content.indexOf("\\resumeItem", bIdx);
+        if (bIdx === -1) break;
+        const bArgs = extractArguments(content, bIdx + "\\resumeItem".length);
+        if (bArgs.args.length >= 1) {
+          bullets.push(cleanVal(bArgs.args[0]));
+        }
+        bIdx = bArgs.nextIndex;
+      }
+      
+      if (bullets.length === 0) {
+        let itemIdx = 0;
+        while (true) {
+          itemIdx = content.indexOf("\\item", itemIdx);
+          if (itemIdx === -1) break;
+          
+          let endItem = content.indexOf("\\item", itemIdx + 5);
+          if (endItem === -1) endItem = content.indexOf("\\end", itemIdx + 5);
+          if (endItem === -1) endItem = content.length;
+          
+          let itemText = content.slice(itemIdx + 5, endItem).trim();
+          if (itemText) bullets.push(cleanVal(itemText));
+          
+          itemIdx = itemIdx + 5;
+        }
+      }
+      
+      customSec.items.push({
+        title: "",
+        subtitle: "",
+        date: "",
+        bullets: bullets
+      });
+    }
+    // Case C: Raw paragraph content
+    else {
+      const paragraphs = content.split("\n\n").map(p => cleanVal(p)).filter(p => p !== "");
+      paragraphs.forEach(p => {
+        customSec.items.push({
+          title: p,
+          subtitle: "",
+          date: "",
+          bullets: []
+        });
+      });
+    }
+    
+    if (customSec.items.length) {
+      data.customSections.push(customSec);
+    }
+  });
+
+  if (allSectionHeaders.length) {
+    state.sectionOrder = allSectionHeaders.map(s => s.toLowerCase());
+  }
+
+  // Extract section spacing if present (e.g. \vspace{-15pt} after a section)
+  const spacingMatch = cleanCode.match(/\\section\{[^}]+\}\s*\\vspace\{([^}]+)\}/i);
+  if (spacingMatch) {
+    state.sectionSpacing = spacingMatch[1].trim();
+    if (els.sectionSpacingSelect) {
+      els.sectionSpacingSelect.value = state.sectionSpacing;
     }
   }
 
-  latestJson = { input: draftData, resume };
-  latestLatex = buildLatexResume(draftData, resume);
-  localStorage.setItem("latestResumeResultData", JSON.stringify(latestJson));
-  localStorage.setItem("latestResumeLatex", latestLatex);
-  
-  // Re-render
-  renderResult(draftData, resume);
-  showStatus("Skill added and resume analysis recalculated!", false, true);
-}
+  // Fallback to default if everything is empty to prevent crashes
+  if (!data.name && !data.education.length && !data.experience.length && !data.projects.length && !data.skills.length && !data.customSections.length) {
+    return null;
+  }
 
+  return data;
+}

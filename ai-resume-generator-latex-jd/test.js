@@ -1,92 +1,106 @@
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 
 console.log("=========================================");
-console.log("🧪 ResuCraft AI Core Engine Test Suite");
+console.log("🧪 Overleaf Live Editor Compiler Test Suite");
 console.log("=========================================\n");
 
 try {
-  // Load sample data, ai engine, and template engine
-  const sampleDataPath = path.join(__dirname, "js", "sampleData.js");
-  const aiPath = path.join(__dirname, "js", "ai.js");
+  // Load template engine
   const templatePath = path.join(__dirname, "js", "templateEngine.js");
+  const { TEMPLATES, compileLatexToHtml, generateLatexFromForm } = require(templatePath);
 
-  // Read files and convert 'const' declarations to 'var' declarations so they attach to VM sandbox context
-  const sampleDataCode = fs.readFileSync(sampleDataPath, "utf8").replace(/const SAMPLE_DATA\s*=/, "var SAMPLE_DATA =");
-  const aiCode = fs.readFileSync(aiPath, "utf8")
-    .replace(/function\s+generateLocalResume\b/, "var generateLocalResume = function")
-    .replace(/function\s+buildResumePrompt\b/, "var buildResumePrompt = function")
-    .replace(/async function\s+callGemini\b/, "var callGemini = async function");
-  const templateCode = fs.readFileSync(templatePath, "utf8")
-    .replace(/function\s+buildLatexResume\b/, "var buildLatexResume = function");
+  console.log("✅ templateEngine.js loaded successfully.");
 
-  // Create sandbox context with browser globals mocked
-  const sandbox = {
-    console,
-    Set,
-    Map,
-    JSON,
-    String,
-    Math,
-    Object,
-    Array,
-    Number,
-    RegExp,
-    // Mock Web Fetch API
-    fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+  // Sample Form Data matching Jake Ryan's CV
+  const sampleFormData = {
+    name: "Jake Ryan",
+    email: "jake@su.edu",
+    phone: "123-456-7890",
+    github: "https://github.com/jake",
+    linkedin: "https://linkedin.com/in/jake",
+    leetcode: "",
+    education: [
+      { institution: "Southwestern University", location: "Georgetown, TX", degree: "Bachelor of Arts in Computer Science, Minor in Business", duration: "Aug. 2018 -- May 2021" }
+    ],
+    experience: [
+      {
+        company: "Texas A&M University",
+        location: "College Station, TX",
+        role: "Undergraduate Research Assistant",
+        duration: "June 2020 -- Present",
+        bullets: [
+          "Developed a REST API using FastAPI and PostgreSQL to store data from learning management systems",
+          "Developed a full-stack web application using Flask, React, PostgreSQL and Docker to analyze GitHub data"
+        ]
+      }
+    ],
+    projects: [
+      {
+        title: "Gitlytics",
+        technologies: "Python, Flask, React, PostgreSQL, Docker",
+        date: "June 2020 -- Present",
+        bullets: [
+          "Developed a full-stack web application using with Flask serving a REST API with React as the frontend"
+        ]
+      }
+    ],
+    skills: {
+      languages: "Java, Python, C/C++",
+      frameworks: "React, Node.js",
+      databases: "Git, Docker",
+      tools: "pandas, NumPy"
+    }
   };
 
-  vm.createContext(sandbox);
+  // Test 1: Generate LaTeX from Form
+  console.log("🏃 Running Test 1: generateLatexFromForm...");
+  const latexResult = generateLatexFromForm(sampleFormData, "jakes_resume", "normal");
+  
+  if (!latexResult) throw new Error("Generated LaTeX is empty");
+  if (!latexResult.includes("\\begin{document}")) throw new Error("Missing \\begin{document}");
+  if (!latexResult.includes("Jake Ryan")) throw new Error("Candidate name not found in LaTeX");
+  if (!latexResult.includes("Southwestern University")) throw new Error("Education details not found in LaTeX");
+  if (!latexResult.includes("Undergraduate Research Assistant")) throw new Error("Experience details not found in LaTeX");
 
-  // Execute scripts in sandbox context
-  vm.runInContext(sampleDataCode, sandbox);
-  vm.runInContext(aiCode, sandbox);
-  vm.runInContext(templateCode, sandbox);
+  console.log("✅ Test 1 Passed: LaTeX generated successfully.");
 
-  console.log("✅ Core JS source files parsed and loaded successfully.");
+  // Test 2: Compile LaTeX to HTML (nested braces check)
+  console.log("\n🏃 Running Test 2: compileLatexToHtml nested braces check...");
+  
+  // Custom LaTeX with nested braces in projects
+  const nestedLatex = `
+  \\begin{document}
+  \\begin{center}
+      \\textbf{\\Huge \\scshape Jake Ryan} \\\\
+      \\small 123-456-7890 $|$ \\href{mailto:jake@su.edu}{\\underline{jake@su.edu}}
+  \\end{center}
+  \\section{Projects}
+  \\resumeSubHeadingListStart
+    \\resumeProjectHeading
+        {\\textbf{Gitlytics} $|$ \\emph{Python, Flask}}{June 2020 -- Present}
+        \\resumeItemListStart
+          \\resumeItem{Developed a full-stack web application}
+        \\resumeItemListEnd
+  \\resumeSubHeadingListEnd
+  \\end{document}
+  `;
 
-  // Retrieve functions and data from sandbox
-  const SAMPLE_DATA = sandbox.SAMPLE_DATA;
-  const generateLocalResume = sandbox.generateLocalResume;
-  const buildLatexResume = sandbox.buildLatexResume;
+  const htmlResult = compileLatexToHtml(nestedLatex);
 
-  if (!SAMPLE_DATA) throw new Error("SAMPLE_DATA is not defined");
-  if (typeof generateLocalResume !== "function") throw new Error("generateLocalResume is not a function");
-  if (typeof buildLatexResume !== "function") throw new Error("buildLatexResume is not a function");
+  if (htmlResult.includes("compile-error")) {
+    throw new Error(`Compiler returned compilation error: ${htmlResult}`);
+  }
+  if (!htmlResult.includes("Jake Ryan")) throw new Error("Candidate name not found in HTML");
+  if (!htmlResult.includes("Gitlytics")) throw new Error("Project title 'Gitlytics' not compiled in HTML");
+  if (htmlResult.includes("\\resumeProjectHeading")) throw new Error("Raw \\resumeProjectHeading tag remained uncompiled in HTML");
+  if (htmlResult.includes("\\textbf")) throw new Error("Raw \\textbf tag remained uncompiled in HTML");
+  if (!htmlResult.includes("<strong>Gitlytics</strong>")) throw new Error("Project title was not formatted as bold <strong>");
 
-  console.log("✅ Main entrypoint functions validated.");
-
-  // Test 1: Run local resume keywords engine
-  console.log("\n🏃 Running Test 1: Local Resume Alignment Engine...");
-  const resumeResult = generateLocalResume(SAMPLE_DATA);
-
-  // Assertions on output structure
-  if (!resumeResult.targetRole) throw new Error("Missing 'targetRole' in resume output");
-  if (typeof resumeResult.atsScore !== "number") throw new Error("ATS score is not a number");
-  if (!Array.isArray(resumeResult.selectedProjects)) throw new Error("Missing 'selectedProjects' array");
-  if (!Array.isArray(resumeResult.selectedCertificates)) throw new Error("Missing 'selectedCertificates' array");
-
-  console.log(`   - Target Role: ${resumeResult.targetRole}`);
-  console.log(`   - Calculated ATS Score: ${resumeResult.atsScore}%`);
-  console.log(`   - Selected Projects Count: ${resumeResult.selectedProjects.length}`);
-  console.log(`   - Selected Certificates Count: ${resumeResult.selectedCertificates.length}`);
-  console.log("✅ Test 1 Passed: Local alignment scoring computed correctly.");
-
-  // Test 2: Run LaTeX template compilation
-  console.log("\n🏃 Running Test 2: LaTeX Generation Compiler...");
-  const latexCode = buildLatexResume(SAMPLE_DATA, resumeResult);
-
-  if (!latexCode) throw new Error("Generated LaTeX code is empty");
-  if (!latexCode.includes("\\begin{document}")) throw new Error("Generated LaTeX does not contain document body start");
-  if (!latexCode.includes("\\section{Education}")) throw new Error("Generated LaTeX is missing Education section");
-  if (!latexCode.includes(SAMPLE_DATA.name)) throw new Error("Generated LaTeX does not contain the candidate's name");
-
-  console.log(`   - Generated LaTeX Document Length: ${latexCode.length} characters`);
-  console.log("✅ Test 2 Passed: LaTeX source code generated successfully with proper section injections.");
+  console.log("✅ Test 2 Passed: Nested braces and formatting parsed correctly.");
 
   console.log("\n=========================================");
-  console.log("🎉 ALL TESTS PASSED SUCCESSFULLY! Core components are robust.");
+  console.log("🎉 ALL TESTS PASSED SUCCESSFULLY! Compiler is error-free.");
   console.log("=========================================");
   process.exit(0);
 

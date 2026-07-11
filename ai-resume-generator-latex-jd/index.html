@@ -1,237 +1,365 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResuCraft AI - Profile & Education</title>
+  <title>Overleaf Live Editor - Standalone LaTeX Workspace</title>
+  
+  <!-- CSS assets -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/mdn-like.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="ResuCraft AI - Job-Description-Based Resume Generator" />
-  <meta property="og:description" content="Optimize and align your LaTeX resume for target Job Descriptions using local ATS keyword matching and Gemini AI neural generation." />
-  <meta property="og:image" content="https://resucraft-ai.example.com/assets/og-preview.png" />
+  <meta name="description" content="A live Overleaf-style LaTeX workspace with real-time browser preview, autocomplete, and local draft file management." />
 </head>
 <body>
 
-  <!-- 1. TOP HEADER NAVIGATION (SaaS Dashboard Style) -->
+  <!-- 1. Header Toolbar Navigation -->
   <header class="app-header">
-    <div class="brand-area" onclick="location.href='index.html'">
+    <div class="brand-section">
       <div class="brand-logo">
-        <i class="fas fa-file-invoice"></i> ResuCraft AI
+        <i class="fas fa-pen-nib"></i> Overleaf Live
+      </div>
+      <div class="project-title-container">
+        <input type="text" id="projectTitleInput" class="project-title-input" value="My LaTeX Document" title="Rename project" />
       </div>
     </div>
 
-    <!-- Stepper Navigation -->
-    <nav class="stepper-horizontal">
-      <a href="index.html" class="menu-item active" data-step="1">
-        <i class="fas fa-user-circle"></i>
-        <span>Profile & Edu</span>
-      </a>
-      <a href="experience.html" class="menu-item" data-step="2">
-        <i class="fas fa-briefcase"></i>
-        <span>Exp & Projects</span>
-      </a>
-      <a href="ai.html" class="menu-item" data-step="3">
-        <i class="fas fa-brain"></i>
-        <span>AI & Job Target</span>
-      </a>
-      <a href="output.html" class="menu-item" data-step="4" id="sidebarStep4Btn">
-        <i class="fas fa-file-alt"></i>
-        <span>Resume Output</span>
-      </a>
-      <a href="analysis.html" class="menu-item" data-step="5">
-        <i class="fas fa-sliders-h"></i>
-        <span>ATS Tuning</span>
-      </a>
-    </nav>
-
-    <!-- Header Actions -->
-    <div class="header-actions">
-      <div id="userBadge" class="social-avatar-widget guest">
-        <div class="avatar-ring">
-          <div class="avatar-img" id="avatarImg">G</div>
-        </div>
-        <div class="avatar-details">
-          <span class="avatar-username" id="userStatusText">Guest Mode</span>
-        </div>
+    <div class="header-toolbar">
+      <div id="autosaveBadge" style="font-size: 0.75rem; color: var(--success); display: flex; align-items: center; gap: 4px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 12px; transition: all 0.2s; font-weight: 500;">
+        <i class="fas fa-cloud-upload-alt"></i> Saved
       </div>
-      <button id="authModalBtn" type="button" class="auth-link">Login / Register</button>
-      <button id="logoutBtn" type="button" class="auth-link danger" style="display: none;">Logout</button>
-      <button id="themeToggle" type="button" class="ghost-btn small-btn" title="Toggle theme">
+
+      <div id="compileStatusBadge" class="compile-status-badge success">
+        <i class="fas fa-check-circle"></i> Compiled
+      </div>
+
+      <button id="recompileBtn" class="btn btn-primary" title="Recompile LaTeX (Ctrl+Enter)">
+        <i class="fas fa-play"></i> Recompile
+      </button>
+
+      <button id="downloadTexBtn" class="btn btn-secondary" title="Download LaTeX Source (.tex)">
+        <i class="fas fa-download"></i> Download .tex
+      </button>
+
+      <button id="printPdfBtn" class="btn btn-secondary" title="Print to PDF (Ctrl+P)">
+        <i class="fas fa-print"></i> Print PDF
+      </button>
+
+      <button id="copyCodeBtn" class="btn btn-secondary" title="Copy LaTeX code to clipboard">
+        <i class="fas fa-copy"></i> Copy
+      </button>
+
+      <button id="themeToggleBtn" class="btn btn-ghost" title="Toggle Light/Dark Theme">
         <i class="fas fa-adjust"></i>
       </button>
     </div>
   </header>
 
-  <!-- 2. SPLIT LAYOUT APP BODY -->
-  <div class="app-body hide-preview">
+  <!-- 2. Main Workspace 3-Column Layout -->
+  <div class="main-workspace">
     
-    <!-- Left Column: Form Feed -->
-    <main class="center-feed">
-      
-      <div class="feed-header">
-        <h1 id="feedTitle">Create Profile</h1>
-        <p id="feedSubtitle">Provide your base credentials and academic history.</p>
+    <!-- Column 1: Sidebar explorer, templates, & settings -->
+    <aside class="sidebar" id="sidebarPane">
+      <div class="sidebar-body">
+        
+        <!-- Active Resume Template Pin -->
+        <div class="template-section">
+          <label><i class="fas fa-magic"></i> Active Layout Format</label>
+          <div style="font-size: 0.8rem; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; color: var(--text-main); font-weight: 500;">
+            <i class="fas fa-file-invoice"></i> Jake's Resume (Default)
+          </div>
+          <select id="templateSelect" class="template-select" style="display: none;">
+            <option value="jakes_resume" selected>Jake's Resume (Engineering)</option>
+          </select>
+        </div>
+
+        <!-- Project File Tree Explorer -->
+        <div>
+          <div class="sidebar-header">
+            <h3><i class="fas fa-folder-open"></i> Project Files</h3>
+            <button id="newFileBtn" class="btn btn-ghost" style="padding: 2px 6px;" title="New File">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <ul class="file-list" id="fileTreeContainer">
+            <!-- Dynamically populated files list -->
+          </ul>
+        </div>
+
+        <!-- Editor Settings section -->
+        <div class="template-section" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 8px;">
+          <label style="margin-bottom: 8px; display: block;"><i class="fas fa-sliders-h"></i> Workspace Settings</label>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+              Font Size
+              <select id="fontSizeSelect" class="template-select">
+                <option value="8px">8px</option>
+                <option value="9px">9px</option>
+                <option value="10px">10px</option>
+                <option value="11px">11px</option>
+                <option value="12px">12px</option>
+                <option value="13px">13px</option>
+                <option value="14px" selected>14px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
+                <option value="20px">20px</option>
+                <option value="24px">24px</option>
+              </select>
+            </label>
+
+            <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+              Editor Theme
+              <select id="editorThemeSelect" class="template-select">
+                <option value="dracula" selected>Dracula (Dark)</option>
+                <option value="mdn-like">MDN (Light)</option>
+              </select>
+            </label>
+
+            <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+              Page Limit
+              <select id="pageBudgetSelect" class="template-select">
+                <option value="auto" selected>Auto / Unlimited</option>
+                <option value="1">1 Page Limit</option>
+                <option value="2">2 Pages Limit</option>
+              </select>
+            </label>
+
+            <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+              Spacing Compactness
+              <select id="compactnessSelect" class="template-select">
+                <option value="compact">Compact</option>
+                <option value="normal" selected>Normal</option>
+                <option value="loose">Loose</option>
+              </select>
+            </label>
+
+            <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+              Section Spacing
+              <select id="sectionSpacingSelect" class="template-select">
+                <option value="-18pt">Extra Compact (-18pt)</option>
+                <option value="-15pt" selected>Compact (-15pt)</option>
+                <option value="-10pt">Tight (-10pt)</option>
+                <option value="-5pt">Medium (-5pt)</option>
+                <option value="0pt">Standard (0pt)</option>
+                <option value="5pt">Loose (5pt)</option>
+                <option value="10pt">Extra Loose (10pt)</option>
+              </select>
+            </label>
+
+            <label style="font-size: 0.7rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              Line Wrapping
+              <input type="checkbox" id="lineWrappingCheckbox" checked />
+            </label>
+          </div>
+        </div>
       </div>
 
-      <form id="resumeForm">
-        
-        <!-- STEP 1: Profile & Education Feed -->
-        <div class="wizard-step active" id="step-1">
+      <!-- AI Copilot Assistant Panel -->
+      <div class="sidebar-footer">
+        <div class="ai-assistant-widget">
+          <div class="ai-header">
+            <i class="fas fa-brain"></i> Gemini AI Assistant
+          </div>
+          <textarea id="aiPromptTextarea" class="ai-textarea" placeholder="Select text in the editor, or write here to polish LaTeX bullet points."></textarea>
           
-          <!-- Card 1: Personal details -->
-          <div class="feed-card">
-            <div class="feed-card-header">
-              <div class="feed-card-icon"><i class="fas fa-user"></i></div>
-              <div class="feed-card-title">
-                <h3>Personal Details</h3>
-                <p>Inserted into the header format of your LaTeX template.</p>
-              </div>
-            </div>
-            <div class="feed-card-body">
-              <div class="grid two">
-                <label class="full-width">Full Name<input id="name" required placeholder="Arekanti Siddhartha" /></label>
-                <label class="full-width">Email<input id="email" type="email" required placeholder="siddartha@example.com" /></label>
-                <label>Phone<input id="phone" placeholder="+91 86880 50497" /></label>
-                <label>GitHub URL<input id="github" placeholder="https://github.com/username" /></label>
-                <label>LinkedIn URL<input id="linkedin" placeholder="https://linkedin.com/in/username" /></label>
-                <label>LeetCode URL<input id="leetcode" placeholder="https://leetcode.com/u/username" /></label>
-              </div>
-            </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.65rem; color: var(--text-muted); display: block;">
+              Gemini API Key (saved locally):
+              <input type="password" id="geminiApiKeyInput" style="width:100%; font-size:0.75rem; background: var(--bg-subtle); border: 1px solid var(--border-color); color:var(--text-main); border-radius:4px; padding:3px 6px; margin-top:2px;" placeholder="Optional AI API Key" />
+            </label>
+            <button id="aiPolishBtn" class="btn btn-primary" style="width: 100%; font-size: 0.75rem; padding: 6px;">
+              <i class="fas fa-sparkles"></i> Polish Content
+            </button>
           </div>
-
-          <!-- Card 2: Education list -->
-          <div class="feed-card">
-            <div class="feed-card-header">
-              <div class="feed-card-icon"><i class="fas fa-graduation-cap"></i></div>
-              <div class="feed-card-title">
-                <h3>Education Entries</h3>
-                <p>Add one or more educational timelines.</p>
-              </div>
-            </div>
-            <div class="feed-card-body">
-              <div id="educationContainer"></div>
-              <button id="addEducationBtn" type="button" class="ghost-btn small-btn" style="margin-top: 12px; width: 100%;">
-                <i class="fas fa-plus"></i> Add education
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Wizard Navigation Row -->
-        <div class="wizard-nav" id="wizardNav">
-          <button type="button" class="ghost-btn" id="prevBtn" style="visibility: hidden;">
-            <i class="fas fa-arrow-left"></i> Back
-          </button>
-          <button type="button" class="primary-btn" id="nextBtn">
-            Next: Exp & Projects <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
-
-      </form>
-
-      <footer class="footer">
-        <p>Built as an open source resume optimizer. Hashed password credentials saved securely inside local SQLite database.</p>
-      </footer>
-    </main>
-
-    <!-- Right Column: Live Resume Dashboard -->
-    <aside class="right-drawer" id="rightDrawer">
-      <div class="right-drawer-header">
-        <h2>Live Resume Dashboard</h2>
-        <p>Real-time ATS scores, formatting structures, and LaTeX exports.</p>
-      </div>
-
-      <div id="status" class="status">Ready.</div>
-
-      <!-- Real-time ATS Circular Widget -->
-      <div class="social-score-container">
-        <div class="circle-progress-wrapper med-score" id="scoreCircle">
-          <span id="atsScore">--</span>
-        </div>
-        <div class="score-details">
-          <h4 class="score-title">Estimated ATS Keyword Score</h4>
-          <span class="score-subtitle" id="selectedCounts">--</span>
-        </div>
-      </div>
-
-      <!-- Live Preview Area Tabs -->
-      <div class="tabs">
-        <button type="button" class="tab active" data-tab="preview">Preview</button>
-        <button type="button" class="tab" data-tab="latex">LaTeX Code</button>
-        <button type="button" class="tab" data-tab="analysis">ATS Analysis</button>
-      </div>
-
-      <div class="right-drawer-body">
-        
-        <section id="previewTab" class="tab-content active">
-          <div id="resumePreview" class="resume-preview empty-state">Generated resume preview will appear here. Enter details and generate to start.</div>
-        </section>
-
-        <section id="latexTab" class="tab-content">
-          <pre id="latexOutput" class="code-block">LaTeX output will appear here.</pre>
-        </section>
-
-        <section id="analysisTab" class="tab-content">
-          <div id="analysisOutput" class="analysis-box">JD analysis details will appear here.</div>
-        </section>
-
-      </div>
-
-      <!-- Action Footer -->
-      <div class="right-drawer-footer">
-        <div class="button-row full-width">
-          <button id="downloadTexBtn" type="button" class="primary-btn" style="flex-grow: 1;">
-            <i class="fas fa-file-download"></i> Download .tex
-          </button>
-          <button id="copyLatexBtn" type="button" class="secondary-btn">
-            <i class="fas fa-copy"></i> Copy
-          </button>
-          <button id="downloadJsonBtn" type="button" class="ghost-btn" title="Download JSON Analysis">
-            <i class="fas fa-code"></i>
-          </button>
-          <button id="printBtn" type="button" class="ghost-btn" title="Print Preview">
-            <i class="fas fa-print"></i>
-          </button>
         </div>
       </div>
     </aside>
 
-  </div>
+    <!-- Resizer 1 (Sidebar - Editor) -->
+    <div class="pane-resizer" id="sidebarResizer"></div>
 
-  <!-- Sleek Auth Modal Overlay -->
-  <div id="authModal" class="modal-overlay" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2 id="authModalTitle">Sign In</h2>
-        <button id="closeAuthModal" type="button" class="close-btn">&times;</button>
+    <!-- Column 2: Code Editor & Form Pane -->
+    <section class="editor-pane" id="editorPane">
+      
+      <!-- Tab Headers -->
+      <div class="editor-tabs">
+        <button class="editor-tab active" id="tabFormBtn">
+          <i class="fas fa-edit"></i> Form Input
+        </button>
+        <button class="editor-tab" id="tabCodeBtn">
+          <i class="fas fa-code"></i> LaTeX Source
+        </button>
       </div>
-      <form id="authForm">
-        <div class="status error" id="authError" style="display: none;"></div>
-        <div class="status success" id="authSuccess" style="display: none;"></div>
+
+      <!-- Tab Content: Form Editor -->
+      <div class="editor-tab-content active" id="formEditorContent">
         
-        <label>Username
-          <input id="authUsername" type="text" placeholder="Enter username" required minlength="3" autocomplete="username" />
-        </label>
-        <label>Password
-          <input id="authPassword" type="password" placeholder="Enter password" required minlength="5" autocomplete="current-password" />
-        </label>
-        
-        <div class="button-row compact" style="margin-top: 18px;">
-          <button id="authSubmitBtn" type="submit" class="primary-btn" style="width: 100%;">Sign In</button>
+        <!-- Accordion 1: Personal Details -->
+        <div class="accordion-item active">
+          <div class="accordion-header">
+            <span><i class="fas fa-user-circle"></i> Personal Details</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="accordion-body">
+            <div class="form-grid">
+              <label>Full Name <input type="text" id="formName" placeholder="Arekanti Siddartha" /></label>
+              <label>Email <input type="email" id="formEmail" placeholder="siddarthaarekanti@gmail.com" /></label>
+              <label>Phone <input type="text" id="formPhone" placeholder="+91 8688050497" /></label>
+              <label>GitHub Link <input type="text" id="formGithub" placeholder="https://github.com/Siddartharekanti" /></label>
+              <label>LinkedIn Link <input type="text" id="formLinkedin" placeholder="https://linkedin.com/in/username" /></label>
+              <label>LeetCode Link <input type="text" id="formLeetcode" placeholder="https://leetcode.com/u/Siddartha_A/" /></label>
+            </div>
+          </div>
         </div>
-        <p class="modal-switch-text">
-          Don't have an account? <a href="#" id="toggleAuthMode">Create one now</a>
-        </p>
-      </form>
-    </div>
+
+        <!-- Accordion 2: Education -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span><i class="fas fa-graduation-cap"></i> Education</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="formEducationContainer"></div>
+            <button type="button" class="btn btn-secondary" id="formAddEduBtn" style="width: 100%; margin-top: 12px;">
+              <i class="fas fa-plus"></i> Add Education Entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Accordion 3: Experience -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span><i class="fas fa-briefcase"></i> Work Experience</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="formExperienceContainer"></div>
+            <button type="button" class="btn btn-secondary" id="formAddExpBtn" style="width: 100%; margin-top: 12px;">
+              <i class="fas fa-plus"></i> Add Experience Entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Accordion 4: Projects -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span><i class="fas fa-project-diagram"></i> Projects</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="formProjectsContainer"></div>
+            <button type="button" class="btn btn-secondary" id="formAddProjBtn" style="width: 100%; margin-top: 12px;">
+              <i class="fas fa-plus"></i> Add Project Entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Accordion 5: Certificates -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span><i class="fas fa-certificate"></i> Certificates</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="formCertificatesContainer"></div>
+            <button type="button" class="btn btn-secondary" id="formAddCertBtn" style="width: 100%; margin-top: 12px;">
+              <i class="fas fa-plus"></i> Add Certificate Entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Accordion 6: Technical Skills -->
+        <div class="accordion-item">
+          <div class="accordion-header">
+            <span><i class="fas fa-cogs"></i> Technical Skills</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="formSkillsContainer"></div>
+            <button type="button" class="btn btn-secondary" id="formAddSkillBtn" style="width: 100%; margin-top: 12px;">
+              <i class="fas fa-plus"></i> Add Skill Category
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab Content: Code Editor -->
+      <div class="editor-tab-content" id="codeEditorContent" style="display: none; flex: 1;">
+        <div style="flex: 1; display: flex; flex-direction: column; position: relative; height: 100%;">
+          <textarea id="latexCodeArea" style="display: none;"></textarea>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Resizer 2 (Editor - Preview) -->
+    <div class="pane-resizer" id="editorPreviewResizer"></div>
+
+    <!-- Column 3: Document Preview Pane -->
+    <section class="preview-pane" id="previewPane">
+      <div class="preview-toolbar">
+        <div class="preview-toolbar-left" id="compiledMetaText">
+          Page 1 of 1
+        </div>
+        
+        <div class="preview-toolbar-right">
+          <div class="toggle-wrapper">
+            <span>Auto Compile</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoCompileToggle" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <button id="zoomOutBtn" class="btn btn-ghost" style="padding: 4px 8px;" title="Zoom Out">
+            <i class="fas fa-search-minus"></i>
+          </button>
+          <span id="zoomPercentText" style="font-size: 0.8rem; min-width: 40px; text-align: center;">95%</span>
+          <button id="zoomInBtn" class="btn btn-ghost" style="padding: 4px 8px;" title="Zoom In">
+            <i class="fas fa-search-plus"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Rendered A4 sheet viewport -->
+      <div class="document-viewport">
+        <div class="resume-sheet" id="resumeSheet">
+          <div id="compiledContentContainer">
+            <!-- LaTeX compile target loads here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Log Panel Popup -->
+      <div class="compile-log-panel" id="compileLogPanel">
+        <!-- Compile diagnostic errors -->
+      </div>
+    </section>
+
   </div>
 
-  <script src="js/sampleData.js"></script>
-  <script src="js/ai.js"></script>
+  <!-- Status Bar Footer -->
+  <footer class="status-bar">
+    <div class="status-bar-item" id="editorCursorPosition">
+      Ln 1, Col 1
+    </div>
+    <div class="status-bar-item" id="documentStatsText">
+      0 words, 0 characters
+    </div>
+  </footer>
+
+  <!-- Script Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/stex/stex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/placeholder.min.js"></script>
+  
+  <!-- Project Scripts -->
   <script src="js/templateEngine.js"></script>
   <script src="js/app.js"></script>
 </body>

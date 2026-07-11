@@ -17,8 +17,7 @@ try {
     .replace(/function\s+generateLocalResume\b/, "var generateLocalResume = function")
     .replace(/function\s+buildResumePrompt\b/, "var buildResumePrompt = function")
     .replace(/async function\s+callGemini\b/, "var callGemini = async function");
-  const templateCode = fs.readFileSync(templatePath, "utf8")
-    .replace(/function\s+buildLatexResume\b/, "var buildLatexResume = function");
+  const templateCode = fs.readFileSync(templatePath, "utf8");
 
   // Create sandbox context with browser globals mocked
   const sandbox = {
@@ -43,11 +42,38 @@ try {
 
   const SAMPLE_DATA = sandbox.SAMPLE_DATA;
   const generateLocalResume = sandbox.generateLocalResume;
-  const buildLatexResume = sandbox.buildLatexResume;
+  const generateLatexFromForm = sandbox.generateLatexFromForm;
+
+  if (typeof generateLocalResume !== "function") {
+    throw new Error("generateLocalResume is not defined in sandbox.");
+  }
+  if (typeof generateLatexFromForm !== "function") {
+    throw new Error("generateLatexFromForm is not defined in sandbox.");
+  }
 
   // Run local resume keywords engine
   const resumeResult = generateLocalResume(SAMPLE_DATA);
-  const latexCode = buildLatexResume(SAMPLE_DATA, resumeResult);
+  
+  // Format the outputs to match form structure for compilation
+  const compiledData = {
+    ...SAMPLE_DATA,
+    education: resumeResult.education || SAMPLE_DATA.education,
+    experience: resumeResult.experience || SAMPLE_DATA.experience,
+    projects: resumeResult.selectedProjects || SAMPLE_DATA.projects,
+    skills: Array.isArray(resumeResult.skills) 
+      ? resumeResult.skills 
+      : Object.entries(resumeResult.skills || {}).map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) })),
+    certificates: resumeResult.selectedCertificates || SAMPLE_DATA.certificates,
+    customSections: [
+      {
+        title: "Achievements",
+        items: (resumeResult.achievements || []).map(ach => ({ title: ach, subtitle: "", date: "", bullets: [] }))
+      }
+    ]
+  };
+
+  const sectionOrder = ["education", "experience", "projects", "certificates", "skills", "achievements"];
+  const latexCode = generateLatexFromForm(compiledData, "jakes_resume", "normal", sectionOrder);
 
   // Write outputs to files
   const latexOutputPath = path.join(__dirname, "output-resume.tex");
